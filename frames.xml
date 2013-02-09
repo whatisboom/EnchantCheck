@@ -1,0 +1,36 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+
+<Button name="CharacterFrameEnchantCheckButton" inherits="UIPanelButtonTemplate" parent="PaperDollFrame" text="Enchants">
+	<Size x="110" y="20"/>
+	<Anchors>
+		<Anchor point="LEFT" relativePoint="BOTTOMLEFT">
+			<Offset><AbsDimension x="10" y="20"/></Offset>
+		</Anchor>
+	</Anchors>
+	<Scripts>
+		<OnClick>
+			EnchantCheck:CheckCharacter()
+		</OnClick>
+	</Scripts>
+</Button>
+
+<Button name="InspectFrameEnchantCheckButton" inherits="UIPanelButtonTemplate" text="Enchants">
+	<Size x="110" y="20"/>
+	<Scripts>
+		<OnClick>
+			EnchantCheck:CheckInspected()
+		</OnClick>
+	</Scripts>
+</Button>
+
+<Button name="InspectFrameInviteButton" inherits="UIPanelButtonTemplate" text="Invite">
+	<Size x="112" y="20"/>
+	<Scripts>
+		<OnClick>
+			EnchantCheck:InviteInspected()
+		</OnClick>
+	</Scripts>
+</Button>
+
+</Ui>
