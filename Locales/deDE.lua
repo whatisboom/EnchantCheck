@@ -11,12 +11,16 @@ L["LOADED"] = "geladen."
 L["BTN_CHECK_ENCHANTS"] = "Prüfen"
 L["BTN_INVITE"] = "Einladen"
 
+L["UI_ITEMS_TITLE"] = "Ausrüstung"
+L["UI_GEMS_TITLE"] = "Edelsteine"
+L["UI_ENCHANTS_TITLE"] = "Verzauberungen"
+
 L["ENCHANT_REPORT_HEADER"] = "|cff00FF00Enchant Check|cffFFFFFF für %s (L%d %s):" -- name, level, class
 L["AVG_ITEM_LEVEL"] = "Durchschnittliches Item-Level: %d (%d to %d)"
 L["MISSING_ITEMS"] = "Fehlende Ausrüstung:"
 L["MISSING_GEMS"] = "Fehlende Edelsteine:"
 L["MISSING_ENCHANTS"] = "Fehlende Verzauberungen:"
-L["LOW_ITEM_LEVEL"] = "Extrem niedriges Item-Level:"
+L["LOW_ITEM_LEVEL"] = "Niedriges Item-Level:"
 L["PROPER_GEMS"] = "Alle Sockel haben Edelsteine."
 L["PROPER_ENCHANTS"] = "Alle Gegenstände sind verzaubert."
 

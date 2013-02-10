@@ -11,12 +11,16 @@ L["LOADED"] = "loaded."
 L["BTN_CHECK_ENCHANTS"] = "Check"
 L["BTN_INVITE"] = "Invite"
 
+L["UI_ITEMS_TITLE"] = "Gear"
+L["UI_GEMS_TITLE"] = "Gems"
+L["UI_ENCHANTS_TITLE"] = "Enchants"
+
 L["ENCHANT_REPORT_HEADER"] = "|cff00FF00Enchant Check|cffFFFFFF for %s (L%d %s):" -- name, level, class
 L["AVG_ITEM_LEVEL"] = "Average item level: %d (%d to %d)"
 L["MISSING_ITEMS"] = "Missing items:"
 L["MISSING_GEMS"] = "Missing gems:"
 L["MISSING_ENCHANTS"] = "Missing enchants:"
-L["LOW_ITEM_LEVEL"] = "Extremely low item level:"
+L["LOW_ITEM_LEVEL"] = "Low item level:"
 L["PROPER_GEMS"] = "All sockets have gems."
 L["PROPER_ENCHANTS"] = "All items are enchanted."
 

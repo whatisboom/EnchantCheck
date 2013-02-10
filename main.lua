@@ -14,7 +14,7 @@ local LI = LibStub("LibBabble-Inventory-3.0"):GetLookupTable()
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.1 (r"..rev..")"
+EnchantCheck.version = "0.2 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Setup class colors
@@ -140,9 +140,15 @@ function EnchantCheck:OnInitialize()
 	-- Load our database
 	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile")
 	
+	EnchantCheckFrameTitle:SetText("Enchant Check v"..self.version)
+	
 	CharacterFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"])
 	InspectFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"])
 	InspectFrameInviteButton:SetText(L["BTN_INVITE"])
+	
+	EnchantCheckItemsFrame.titleFont:SetText(L["UI_ITEMS_TITLE"])
+	EnchantCheckGemsFrame.titleFont:SetText(L["UI_GEMS_TITLE"])
+	EnchantCheckEnchantsFrame.titleFont:SetText(L["UI_ENCHANTS_TITLE"])
 	
 	if self.db.profile.enable then
 		self:Enable()
@@ -156,7 +162,7 @@ end
 ----------------------------------------------
 function EnchantCheck:OnEnable()
 	self:RegisterEvent("INSPECT_READY")
-	--self:RegisterEvent("UNIT_INVENTORY_CHANGED")
+	self:RegisterEvent("UNIT_INVENTORY_CHANGED")
 
 	self:Debug(d_notice, L["ENABLED"])
 end
@@ -166,7 +172,7 @@ end
 ----------------------------------------------
 function EnchantCheck:OnDisable()
 	self:UnregisterEvent("INSPECT_READY")
-	--self:UnregisterEvent("UNIT_INVENTORY_CHANGED")
+	self:UnregisterEvent("UNIT_INVENTORY_CHANGED")
 
 	self:Debug(d_notice, L["DISABLED"])
 end
@@ -290,6 +296,10 @@ function EnchantCheck:CheckGear(unit, items, iter)
 		end
 	end
 	
+	local items_state = true
+	local gems_state = true
+	local enchants_state = true
+	
 	-- header
 	table.insert(report, "------------")
 	local displayClass, class = UnitClass(unit)
@@ -305,6 +315,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 		avgItemLevel = itemLevelSum / 16
 	end
 	table.insert(report, string.format(L["AVG_ITEM_LEVEL"], floor(avgItemLevel), itemLevelMin, itemLevelMax))
+	EnchantCheckItemsFrame.titleInfoFont:SetText(string.format("%d (%d -> %d)", floor(avgItemLevel), itemLevelMin, itemLevelMax))
 	
 	-- check for extremely low item levels
 	for i = 1,18 do
@@ -314,6 +325,8 @@ function EnchantCheck:CheckGear(unit, items, iter)
 				(items[i].rarity ~= 7) -- heirloom
 			then
 				table.insert(report, "|cffFF0000"..L["LOW_ITEM_LEVEL"].."|cffFFFFFF "..items[i].link)
+				EnchantCheckItemsFrame.messages:AddMessage(report[#report])
+				items_state = false
 			end
 		end
 	end
@@ -328,6 +341,8 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFF0000" .. L["MISSING_ITEMS"] .. "|cffFFFFFF " .. s)
+		EnchantCheckItemsFrame.messages:AddMessage(report[#report])
+		items_state = false
 	end
 	
 	-- check for missing gems
@@ -340,12 +355,11 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFF0000" .. L["MISSING_GEMS"] .. "|cffFFFFFF " .. s)
+		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
+		gems_state = false
 	else
-		if not hasMissingItems then
-			table.insert(report, "|cff00FF00" .. L["PROPER_GEMS"] .. "|cffFFFFFF ")
-		else
-			table.insert(report, "|cffFFFF00" .. L["PROPER_GEMS"] .. "|cffFFFFFF ")
-		end
+		table.insert(report, "|cff00FF00" .. L["PROPER_GEMS"] .. "|cffFFFFFF ")
+		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
 	
 	-- check for missing enchants
@@ -358,16 +372,19 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFF0000" .. L["MISSING_ENCHANTS"] .. "|cffFFFFFF " .. s)
+		EnchantCheckEnchantsFrame.messages:AddMessage(report[#report])
+		enchants_state = false
 	else
-		if not hasMissingItems then
-			table.insert(report, "|cff00FF00" .. L["PROPER_ENCHANTS"] .. "|cffFFFFFF ")
-		else
-			table.insert(report, "|cffFFFF00" .. L["PROPER_ENCHANTS"] .. "|cffFFFFFF ")
-		end
+		table.insert(report, "|cff00FF00" .. L["PROPER_ENCHANTS"] .. "|cffFFFFFF ")
+		EnchantCheckEnchantsFrame.messages:AddMessage(report[#report])
 	end
 	
 	-- footer
 	table.insert(report, "------------")
+	
+	self:SetCheckFrame(EnchantCheckItemsFrame, items_state)
+	self:SetCheckFrame(EnchantCheckGemsFrame, gems_state)
+	self:SetCheckFrame(EnchantCheckEnchantsFrame, enchants_state)
 	
 	-- print to self
 	for i,v in ipairs(report) do
@@ -381,7 +398,21 @@ end
 -- CheckCharacter()
 ----------------------------------------------
 function EnchantCheck:CheckCharacter()
-	if not self.scanInProgress then
+	if not self.scanInProgress then	
+		if EnchantCheckFrame:GetParent() ~= CharacterModelFrame then
+			EnchantCheckFrame:Hide()
+			EnchantCheckFrame:SetParent(CharacterModelFrame)
+			EnchantCheckFrame:ClearAllPoints()
+			EnchantCheckFrame:SetAllPoints()
+		elseif EnchantCheckFrame:IsShown() then
+			EnchantCheckFrame:Hide()
+			return
+		end
+		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
+		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
+		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
+		EnchantCheckFrame:Show()
+		
 		self:CheckGear("player")
 	end
 end
@@ -392,6 +423,20 @@ end
 function EnchantCheck:CheckInspected()
 	if InspectFrame.unit and CanInspect(InspectFrame.unit) then
 		if not self.scanInProgress then
+			if EnchantCheckFrame:GetParent() ~= InspectModelFrame then
+				EnchantCheckFrame:Hide()
+				EnchantCheckFrame:SetParent(InspectModelFrame)
+				EnchantCheckFrame:ClearAllPoints()
+				EnchantCheckFrame:SetAllPoints()
+			elseif EnchantCheckFrame:IsShown() then
+				EnchantCheckFrame:Hide()
+				return
+			end
+			EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
+			EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
+			EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
+			EnchantCheckFrame:Show()
+			
 			self:Debug(d_info, "|cff00FF00" .. L["SCAN"] .. "|cffFFFFFF")
 			NotifyInspect(InspectFrame.unit)
 			self.pendingInspection = true
@@ -407,6 +452,42 @@ end
 function EnchantCheck:InviteInspected()
 	if InspectFrame.unit then
 		InviteUnit(UnitName(InspectFrame.unit))
+	end
+end
+
+----------------------------------------------
+-- ClearCheckFrame(frame)
+----------------------------------------------
+function EnchantCheck:ClearCheckFrame(frame)
+	-- clean up
+	frame.titleFont:SetTextColor(1, 1, 0)
+	frame.titleInfoFont:SetText("")
+	frame.readyTex:Hide()
+	frame.notReadyTex:Hide()
+	frame.waitingTex:Show()
+	frame.messages:Clear()
+end
+
+----------------------------------------------
+-- SetCheckFrame(frame, value)
+-- value: nil/false - red, 1/true - green, anything else - yellow
+----------------------------------------------
+function EnchantCheck:SetCheckFrame(frame, value)
+	if value == 1 or value == true then
+		frame.titleFont:SetTextColor(0, 1, 0)
+		frame.readyTex:Show()
+		frame.notReadyTex:Hide()
+		frame.waitingTex:Hide()
+	elseif not value then
+		frame.titleFont:SetTextColor(1, 0, 0)
+		frame.readyTex:Hide()
+		frame.notReadyTex:Show()
+		frame.waitingTex:Hide()
+	else
+		frame.titleFont:SetTextColor(1, 1, 0)
+		frame.readyTex:Hide()
+		frame.notReadyTex:Hide()
+		frame.waitingTex:Show()
 	end
 end
 
@@ -434,5 +515,14 @@ function EnchantCheck:INSPECT_READY(event, guid)
 	if self.pendingInspection and (UnitGUID(InspectFrame.unit) == guid) then
 		self:CheckGear(InspectFrame.unit)
 		self.pendingInspection = nil
+	end
+end
+
+function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
+	if EnchantCheckFrame:IsShown() then
+		EnchantCheckFrame:Hide()
+		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
+		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
+		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
 	end
 end
