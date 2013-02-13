@@ -14,7 +14,7 @@ local LI = LibStub("LibBabble-Inventory-3.0"):GetLookupTable()
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.2 (r"..rev..")"
+EnchantCheck.version = "0.3 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Setup class colors
@@ -122,7 +122,7 @@ EnchantCheck.defaults = {
 local d_warn = 1
 local d_info = 2
 local d_notice = 3
-local debugLevel = d_info
+local debugLevel = d_notice
 
 ----------------------------------------------
 -- Print debug message
@@ -201,12 +201,16 @@ function EnchantCheck:CheckGear(unit, items, iter)
 	local missingItems = {}
 	local missingGems = {}
 	local missingEnchants = {}
-	local hasMissingItems, hasMissingEnchants, hasMissingGems
+	local missingBlacksmithGems = {}
+	local hasMissingItems, hasMissingEnchants, hasMissingGems, hasMissingBlacksmithGems
+	local hasMissingBeltGem
 	local twoHanded
 	local itemLevelMin = 0
 	local itemLevelMax = 0
 	local itemLevelSum = 0
 	local avgItemLevel = 0
+	local isEnchanter
+	local isBlacksmith
 	local doRescan
 	
 	if not items then items = {} end
@@ -214,6 +218,23 @@ function EnchantCheck:CheckGear(unit, items, iter)
 	
 	self.scanInProgress = true
 	
+	-- profession bonuses
+	if unit == "player" then
+		local prof1, prof2 = GetProfessions()
+		for i,v in ipairs({prof1, prof2}) do
+			local _, _, skillLevel, _, _, _, skillLine = GetProfessionInfo(v)
+			if (skillLine == 333) and (skillLevel >= 400) then -- Enchanting, first learned from trainer
+				isEnchanter = true
+			elseif (skillLine == 164) and (skillLevel >= 400) then -- Blacksmith, first learned from trainer
+				isBlacksmith = true
+			end
+		end
+	end
+	
+	CheckSlotEnchant[INVSLOT_FINGER1] = isEnchanter
+	CheckSlotEnchant[INVSLOT_FINGER2] = isEnchanter
+	
+	-- iterate over equipment slots
 	for i = 1,18 do
 		local item = {}
 		item.id = GetInventoryItemID(unit, i)
@@ -245,13 +266,42 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			item.stats = GetItemStats(item.link)
 			
 			-- gems and sockets
-			item.gems = 0 + Gem1 + Gem2 + Gem3 + Gem4
+			item.gems = 0
+			if Gem1 and Gem1+0 > 0 then item.gems = item.gems + 1 end
+			if Gem2 and Gem2+0 > 0  then item.gems = item.gems + 1 end
+			if Gem3 and Gem3+0 > 0  then item.gems = item.gems + 1 end
+			if Gem4 and Gem4+0 > 0  then item.gems = item.gems + 1 end
 			item.sockets = 
 				(item.stats['EMPTY_SOCKET_RED'] or 0) + 
 				(item.stats['EMPTY_SOCKET_YELLOW'] or 0) +
 				(item.stats['EMPTY_SOCKET_BLUE'] or 0) +
 				(item.stats['EMPTY_SOCKET_META'] or 0) +
 				(item.stats['EMPTY_SOCKET_PRISMATIC'] or 0)
+			
+			-- belt buckle
+			if i == INVSLOT_WAIST then
+				item.sockets = item.sockets + 1
+				hasMissingBeltGem = (item.gems < item.sockets)
+			end
+			
+			-- BS sockets
+			if isBlacksmith then
+				if i == INVSLOT_HAND then
+					item.sockets = item.sockets + 1
+					if item.gems < item.sockets then
+						table.insert(missingBlacksmithGems, i)
+						hasMissingBlacksmithGems = true
+					end
+				elseif i == INVSLOT_WRIST then
+					item.sockets = item.sockets + 1
+					if item.gems < item.sockets then
+						table.insert(missingBlacksmithGems, i)
+						hasMissingBlacksmithGems = true
+					end
+				end
+			end
+			
+			-- missing gems
 			if item.gems < item.sockets then
 				table.insert(missingGems, i)
 				hasMissingGems = true
@@ -259,7 +309,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			
 			-- enchant
 			item.enchant = Enchant + 0 -- enchant ID
-			if CheckSlotEnchant[i] and (item.enchant == 0) then
+			if (item.enchant == 0) and CheckSlotEnchant[i] then
 				table.insert(missingEnchants, i)
 				hasMissingEnchants = true
 			end
@@ -362,6 +412,25 @@ function EnchantCheck:CheckGear(unit, items, iter)
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
 	
+	-- belt buckle
+	if hasMissingBeltGem then
+		table.insert(report, "|cffFFFF00" .. L["MISSING_BELT_BUCKLE"] .. "|cffFFFFFF")
+		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
+	end
+	
+	-- check for missing blacksmith gems
+	if hasMissingBlacksmithGems then
+		local s = ""
+		for k,i in ipairs(missingBlacksmithGems) do
+			s = s .. L["INVSLOT_"..i]
+			if k < #missingBlacksmithGems then
+				s = s .. ", "
+			end
+		end
+		table.insert(report, "|cffFFFF00" .. L["MISSING_BS_SOCKETS"] .. "|cffFFFFFF " .. s)
+		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
+	end
+	
 	-- check for missing enchants
 	if hasMissingEnchants then
 		local s = ""
@@ -387,9 +456,9 @@ function EnchantCheck:CheckGear(unit, items, iter)
 	self:SetCheckFrame(EnchantCheckEnchantsFrame, enchants_state)
 	
 	-- print to self
-	for i,v in ipairs(report) do
+	--[[for i,v in ipairs(report) do
 		self:Print(v)
-	end
+	end]]
 	
 	self.scanInProgress = nil
 end
@@ -507,18 +576,37 @@ function EnchantCheck:INSPECT_READY(event, guid)
 		InspectFrameInviteButton:SetPoint("RIGHT", InspectPaperDollFrame, "BOTTOMRIGHT", -12, 20)
 		InspectFrameInviteButton:Show()
 		
+		self:HookScript(InspectFrame, "OnHide", "InspectFrame_OnHide")
+		
 		--self:Debug(d_notice, "Added inspect buttons")
 	end
 	
 	--self:Debug(d_notice, "INSPECT_READY")
 	
 	if self.pendingInspection and (UnitGUID(InspectFrame.unit) == guid) then
-		self:CheckGear(InspectFrame.unit)
+		if EnchantCheckFrame:IsShown() then
+			self:CheckGear(InspectFrame.unit)
+		end
 		self.pendingInspection = nil
 	end
 end
 
+----------------------------------------------
+-- UNIT_INVENTORY_CHANGED()
+----------------------------------------------
 function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
+	if EnchantCheckFrame:IsShown() then
+		EnchantCheckFrame:Hide()
+		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
+		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
+		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
+	end
+end
+
+----------------------------------------------
+-- InspectFrame_OnHide()
+----------------------------------------------
+function EnchantCheck:InspectFrame_OnHide()
 	if EnchantCheckFrame:IsShown() then
 		EnchantCheckFrame:Hide()
 		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)

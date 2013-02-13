@@ -21,6 +21,9 @@ L["MISSING_ITEMS"] = "Fehlende Ausrüstung:"
 L["MISSING_GEMS"] = "Fehlende Edelsteine:"
 L["MISSING_ENCHANTS"] = "Fehlende Verzauberungen:"
 L["LOW_ITEM_LEVEL"] = "Niedriges Item-Level:"
+L["MISSING_BELT_BUCKLE"] = "Fehlende Gürtelschnalle?"
+L["MISSING_BS_SOCKETS"] = "Fehlende Schmied-Sockel (?):"
+
 L["PROPER_GEMS"] = "Alle Sockel haben Edelsteine."
 L["PROPER_ENCHANTS"] = "Alle Gegenstände sind verzaubert."
 

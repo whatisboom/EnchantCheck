@@ -21,6 +21,9 @@ L["MISSING_ITEMS"] = "Missing items:"
 L["MISSING_GEMS"] = "Missing gems:"
 L["MISSING_ENCHANTS"] = "Missing enchants:"
 L["LOW_ITEM_LEVEL"] = "Low item level:"
+L["MISSING_BELT_BUCKLE"] = "Missing belt buckle?"
+L["MISSING_BS_SOCKETS"] = "Missing blacksmith sockets (?):"
+
 L["PROPER_GEMS"] = "All sockets have gems."
 L["PROPER_ENCHANTS"] = "All items are enchanted."
 
