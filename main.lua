@@ -14,7 +14,7 @@ local LI = LibStub("LibBabble-Inventory-3.0"):GetLookupTable()
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.3 (r"..rev..")"
+EnchantCheck.version = "0.4 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Setup class colors
@@ -194,6 +194,27 @@ function EnchantCheck:OnConfigUpdate()
 end
 
 ----------------------------------------------
+-- GetActualItemLevel(link)
+-- Credits go to Ro
+-- http://us.battle.net/wow/en/forum/topic/7199032730#9
+----------------------------------------------
+local itemLevelAdjust = { -- 11th item:id field and level adjustment
+	["0"]=0,["1"]=8,["373"]=4,["374"]=8,["375"]=4,["376"]=4,
+	["377"]=4,["379"]=4,["380"]=4,["445"]=0,["446"]=4,["447"]=8,
+	["451"]=0,["452"]=8,["453"]=0,["454"]=4,["455"]=8,["456"]=0,
+	["457"]=8,["458"]=0,["459"]=4,["460"]=8,["461"]=12,["462"]=16
+}
+function EnchantCheck:GetActualItemLevel(link)
+	local baseLevel = select(4, GetItemInfo(link))
+	local upgrade = link:match(":(%d+)\124h%[")
+	if baseLevel and upgrade then
+		return baseLevel + itemLevelAdjust[upgrade]
+	else
+		return baseLevel
+	end
+end
+
+----------------------------------------------
 -- CheckGear(unit)
 ----------------------------------------------
 function EnchantCheck:CheckGear(unit, items, iter)
@@ -250,15 +271,16 @@ function EnchantCheck:CheckGear(unit, items, iter)
 				Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
 			
 			-- item level
-			item.level = itemLevel
+			--item.level = itemLevel
+			item.level = self:GetActualItemLevel(item.link)
 			if (i ~= INVSLOT_BODY) and (i ~= INVSLOT_TABARD) then
-				if itemLevel < itemLevelMin or itemLevelMin == 0 then
-					itemLevelMin = itemLevel
+				if item.level < itemLevelMin or itemLevelMin == 0 then
+					itemLevelMin = item.level
 				end
-				if itemLevel > itemLevelMax then
-					itemLevelMax = itemLevel
+				if item.level > itemLevelMax then
+					itemLevelMax = item.level
 				end
-				itemLevelSum = itemLevelSum + itemLevel
+				itemLevelSum = itemLevelSum + item.level
 			end
 			
 			-- misc
