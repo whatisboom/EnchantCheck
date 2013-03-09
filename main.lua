@@ -14,7 +14,7 @@ local LI = LibStub("LibBabble-Inventory-3.0"):GetLookupTable()
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.4 (r"..rev..")"
+EnchantCheck.version = "0.5 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Setup class colors
