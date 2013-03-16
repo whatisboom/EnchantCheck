@@ -207,7 +207,7 @@ local itemLevelAdjust = { -- 11th item:id field and level adjustment
 function EnchantCheck:GetActualItemLevel(link)
 	local baseLevel = select(4, GetItemInfo(link))
 	local upgrade = link:match(":(%d+)\124h%[")
-	if baseLevel and upgrade then
+	if baseLevel and upgrade and itemLevelAdjust[upgrade] then
 		return baseLevel + itemLevelAdjust[upgrade]
 	else
 		return baseLevel
