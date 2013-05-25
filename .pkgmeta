@@ -28,3 +28,5 @@ externals:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceAddon-3.0
 	Libs/LibBabble-Inventory-3.0:
 		url: svn://svn.wowace.com/wow/libbabble-inventory-3-0/mainline/trunk
+	Libs/LibItemUpgradeInfo-1.0:
+		url: git://git.wowace.com/wow/libitemupgradeinfo-1-0/mainline.git
