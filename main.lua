@@ -19,7 +19,7 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.6 (r"..rev..")"
+EnchantCheck.version = "0.6.1 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Setup class colors
