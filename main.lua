@@ -19,8 +19,11 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.6.1 (r"..rev..")"
+EnchantCheck.version = "0.7 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
+
+-- Current max level for automated self-checks
+local MAX_LEVEL = 90
 
 -- Setup class colors
 local ClassColor = {
@@ -168,6 +171,7 @@ end
 function EnchantCheck:OnEnable()
 	self:RegisterEvent("INSPECT_READY")
 	self:RegisterEvent("UNIT_INVENTORY_CHANGED")
+	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 	self:Debug(d_notice, L["ENABLED"])
 end
@@ -178,6 +182,7 @@ end
 function EnchantCheck:OnDisable()
 	self:UnregisterEvent("INSPECT_READY")
 	self:UnregisterEvent("UNIT_INVENTORY_CHANGED")
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
 	self:Debug(d_notice, L["DISABLED"])
 end
@@ -208,8 +213,9 @@ end
 ----------------------------------------------
 -- CheckGear(unit)
 ----------------------------------------------
-function EnchantCheck:CheckGear(unit, items, iter)
+function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local report = {}
+	local warnings = {}
 	local missingItems = {}
 	local missingGems = {}
 	local missingEnchants = {}
@@ -388,6 +394,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 				(items[i].rarity ~= 7) -- heirloom
 			then
 				table.insert(report, "|cffFF0000"..L["LOW_ITEM_LEVEL"].."|cffFFFFFF "..items[i].link)
+				table.insert(warnings, report[#report])
 				EnchantCheckItemsFrame.messages:AddMessage(report[#report])
 				items_state = false
 			end
@@ -404,6 +411,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFF0000" .. L["MISSING_ITEMS"] .. "|cffFFFFFF " .. s)
+		table.insert(warnings, report[#report])
 		EnchantCheckItemsFrame.messages:AddMessage(report[#report])
 		items_state = false
 	end
@@ -418,6 +426,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFF0000" .. L["MISSING_GEMS"] .. "|cffFFFFFF " .. s)
+		table.insert(warnings, report[#report])
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 		gems_state = false
 	else
@@ -428,6 +437,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 	-- belt buckle
 	if hasMissingBeltGem then
 		table.insert(report, "|cffFFFF00" .. L["MISSING_BELT_BUCKLE"] .. "|cffFFFFFF")
+		table.insert(warnings, report[#report])
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
 	
@@ -441,6 +451,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFFFF00" .. L["MISSING_BS_SOCKETS"] .. "|cffFFFFFF " .. s)
+		table.insert(warnings, report[#report])
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
 	
@@ -454,6 +465,7 @@ function EnchantCheck:CheckGear(unit, items, iter)
 			end
 		end
 		table.insert(report, "|cffFF0000" .. L["MISSING_ENCHANTS"] .. "|cffFFFFFF " .. s)
+		table.insert(warnings, report[#report])
 		EnchantCheckEnchantsFrame.messages:AddMessage(report[#report])
 		enchants_state = false
 	else
@@ -469,9 +481,11 @@ function EnchantCheck:CheckGear(unit, items, iter)
 	self:SetCheckFrame(EnchantCheckEnchantsFrame, enchants_state)
 	
 	-- print to self
-	--[[for i,v in ipairs(report) do
-		self:Print(v)
-	end]]
+	if printWarnings then
+		for i,v in ipairs(warnings) do
+			self:Print(v)
+		end
+	end
 	
 	self.scanInProgress = nil
 end
@@ -625,5 +639,15 @@ function EnchantCheck:InspectFrame_OnHide()
 		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
 		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
 		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
+	end
+end
+
+----------------------------------------------
+-- PLAYER_ENTERING_WORLD()
+----------------------------------------------
+function EnchantCheck:PLAYER_ENTERING_WORLD(event)
+	inInstance, instanceType = IsInInstance()
+	if inInstance and (instanceType ~= "none") and (UnitLevel("player") == MAX_LEVEL) then
+		self:CheckGear("player", nil, nil, true)
 	end
 end
