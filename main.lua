@@ -19,7 +19,7 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.7 (r"..rev..")"
+EnchantCheck.version = "0.7.1 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Current max level for automated self-checks
