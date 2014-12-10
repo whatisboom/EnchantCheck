@@ -19,11 +19,11 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.7.1 (r"..rev..")"
+EnchantCheck.version = "0.8 beta (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Current max level for automated self-checks
-local MAX_LEVEL = 90
+local MAX_LEVEL = 100
 
 -- Setup class colors
 local ClassColor = {
@@ -43,20 +43,20 @@ local ClassColor = {
 -- What slots need enchants?
 local CheckSlotEnchant = {
 	[INVSLOT_HEAD] = false,
-	[INVSLOT_NECK] = false,
-	[INVSLOT_SHOULDER] = true,
+	[INVSLOT_NECK] = true,
+	[INVSLOT_SHOULDER] = false,
 	[INVSLOT_BACK] = true,
-	[INVSLOT_CHEST] = true,
+	[INVSLOT_CHEST] = false,
 	[INVSLOT_BODY] = false, -- shirt
 	[INVSLOT_TABARD] = false,
-	[INVSLOT_WRIST] = true,
+	[INVSLOT_WRIST] = false,
 	
-	[INVSLOT_HAND] = true,
+	[INVSLOT_HAND] = false,
 	[INVSLOT_WAIST] = false,
-	[INVSLOT_LEGS] = true,
-	[INVSLOT_FEET] = true,
-	[INVSLOT_FINGER1] = false,
-	[INVSLOT_FINGER2] = false,
+	[INVSLOT_LEGS] = false,
+	[INVSLOT_FEET] = false,
+	[INVSLOT_FINGER1] = true,
+	[INVSLOT_FINGER2] = true,
 	[INVSLOT_TRINKET1] = false,
 	[INVSLOT_TRINKET2] = false,
 	
@@ -227,8 +227,8 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local itemLevelMax = 0
 	local itemLevelSum = 0
 	local avgItemLevel = 0
-	local isEnchanter
-	local isBlacksmith
+	--local isEnchanter
+	--local isBlacksmith
 	local doRescan
 	
 	if not items then items = {} end
@@ -236,7 +236,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	
 	self.scanInProgress = true
 	
-	-- profession bonuses
+	--[[ profession bonuses (no longer existing at level 100)
 	if unit == "player" then
 		local prof1, prof2 = GetProfessions()
 		for i,v in ipairs({prof1, prof2}) do
@@ -251,6 +251,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	
 	CheckSlotEnchant[INVSLOT_FINGER1] = isEnchanter
 	CheckSlotEnchant[INVSLOT_FINGER2] = isEnchanter
+	]]
 	
 	-- iterate over equipment slots
 	for i = 1,18 do
@@ -297,13 +298,14 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 				(item.stats['EMPTY_SOCKET_META'] or 0) +
 				(item.stats['EMPTY_SOCKET_PRISMATIC'] or 0)
 			
-			-- belt buckle
+			--[[ belt buckle (no longer available in at level 100)
 			if i == INVSLOT_WAIST then
 				item.sockets = item.sockets + 1
 				hasMissingBeltGem = (item.gems < item.sockets)
 			end
+			]]
 			
-			-- BS sockets
+			--[[ BS sockets (no longer available in at level 100)
 			if isBlacksmith then
 				if i == INVSLOT_HAND then
 					item.sockets = item.sockets + 1
@@ -319,6 +321,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 					end
 				end
 			end
+			]]
 			
 			-- missing gems
 			if item.gems < item.sockets then
@@ -434,14 +437,15 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
 	
-	-- belt buckle
+	--[[ belt buckle (no longer available in at level 100)
 	if hasMissingBeltGem then
 		table.insert(report, "|cffFFFF00" .. L["MISSING_BELT_BUCKLE"] .. "|cffFFFFFF")
 		table.insert(warnings, report[#report])
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
+	]]
 	
-	-- check for missing blacksmith gems
+	--[[ check for missing blacksmith gems (no longer available in at level 100)
 	if hasMissingBlacksmithGems then
 		local s = ""
 		for k,i in ipairs(missingBlacksmithGems) do
@@ -454,6 +458,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		table.insert(warnings, report[#report])
 		EnchantCheckGemsFrame.messages:AddMessage(report[#report])
 	end
+	]]
 	
 	-- check for missing enchants
 	if hasMissingEnchants then
