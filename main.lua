@@ -19,7 +19,7 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Version
 ----------------------------------------------
 local _, _, rev = string.find("$Rev: 36 $", "([0-9]+)")
-EnchantCheck.version = "0.8 beta (r"..rev..")"
+EnchantCheck.version = "0.8.1 (r"..rev..")"
 EnchantCheck.authors = "nyyr"
 
 -- Current max level for automated self-checks
@@ -227,31 +227,12 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local itemLevelMax = 0
 	local itemLevelSum = 0
 	local avgItemLevel = 0
-	--local isEnchanter
-	--local isBlacksmith
 	local doRescan
 	
 	if not items then items = {} end
 	if not iter then iter = 0 end
 	
 	self.scanInProgress = true
-	
-	--[[ profession bonuses (no longer existing at level 100)
-	if unit == "player" then
-		local prof1, prof2 = GetProfessions()
-		for i,v in ipairs({prof1, prof2}) do
-			local _, _, skillLevel, _, _, _, skillLine = GetProfessionInfo(v)
-			if (skillLine == 333) and (skillLevel >= 400) then -- Enchanting, first learned from trainer
-				isEnchanter = true
-			elseif (skillLine == 164) and (skillLevel >= 400) then -- Blacksmith, first learned from trainer
-				isBlacksmith = true
-			end
-		end
-	end
-	
-	CheckSlotEnchant[INVSLOT_FINGER1] = isEnchanter
-	CheckSlotEnchant[INVSLOT_FINGER2] = isEnchanter
-	]]
 	
 	-- iterate over equipment slots
 	for i = 1,18 do
@@ -269,7 +250,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 				Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
 			
 			-- item level
-			--item.level = itemLevel
 			item.level = self:GetActualItemLevel(item.link)
 			if (i ~= INVSLOT_BODY) and (i ~= INVSLOT_TABARD) then
 				if item.level < itemLevelMin or itemLevelMin == 0 then
@@ -298,31 +278,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 				(item.stats['EMPTY_SOCKET_META'] or 0) +
 				(item.stats['EMPTY_SOCKET_PRISMATIC'] or 0)
 			
-			--[[ belt buckle (no longer available in at level 100)
-			if i == INVSLOT_WAIST then
-				item.sockets = item.sockets + 1
-				hasMissingBeltGem = (item.gems < item.sockets)
-			end
-			]]
-			
-			--[[ BS sockets (no longer available in at level 100)
-			if isBlacksmith then
-				if i == INVSLOT_HAND then
-					item.sockets = item.sockets + 1
-					if item.gems < item.sockets then
-						table.insert(missingBlacksmithGems, i)
-						hasMissingBlacksmithGems = true
-					end
-				elseif i == INVSLOT_WRIST then
-					item.sockets = item.sockets + 1
-					if item.gems < item.sockets then
-						table.insert(missingBlacksmithGems, i)
-						hasMissingBlacksmithGems = true
-					end
-				end
-			end
-			]]
-			
 			-- missing gems
 			if item.gems < item.sockets then
 				table.insert(missingGems, i)
@@ -332,8 +287,10 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 			-- enchant
 			item.enchant = Enchant + 0 -- enchant ID
 			if (item.enchant == 0) and CheckSlotEnchant[i] then
-				table.insert(missingEnchants, i)
-				hasMissingEnchants = true
+				if ((i ~= INVSLOT_OFFHAND) or (itemType == WEAPON)) then -- ignore non-weapon off-hand items
+					table.insert(missingEnchants, i)
+					hasMissingEnchants = true
+				end
 			end
 			
 			-- two-hander?
