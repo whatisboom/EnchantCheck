@@ -117,10 +117,10 @@
 </Frame>
 
 <Button name="CharacterFrameEnchantCheckButton" inherits="UIPanelButtonTemplate" parent="PaperDollFrame" text="Check">
-	<Size x="110" y="20"/>
+	<Size x="50" y="20"/>
 	<Anchors>
 		<Anchor point="LEFT" relativePoint="BOTTOMLEFT">
-			<Offset><AbsDimension x="10" y="20"/></Offset>
+			<Offset><AbsDimension x="72" y="20"/></Offset>
 		</Anchor>
 	</Anchors>
 	<Scripts>
