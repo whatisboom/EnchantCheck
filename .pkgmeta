@@ -18,4 +18,3 @@ externals:
     Libs/AceTimer-3.0:            https://repos.wowace.com/wow/ace3/trunk/AceTimer-3.0
     Libs/LibDialog-1.0:           https://repos.wowace.com/wow/libdialog-1-0
 	Libs/LibBabble-Inventory-3.0: https://repos.wowace.com/wow/libbabble-inventory-3-0/trunk
-	Libs/LibItemUpgradeInfo-1.0:  https://repos.wowace.com/wow/libitemupgradeinfo-1-0
