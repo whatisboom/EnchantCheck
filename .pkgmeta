@@ -4,7 +4,9 @@ license-output: COPYING
 
 ignore:
 	- .pkgmeta
-
+	- Libs/LibStub/tests
+	- Libs/LibItemUpgradeInfo-1.0/LibStub/tests
+	
 externals:
 	Libs/LibStub:                 https://repos.wowace.com/wow/libstub/trunk
 	Libs/CallbackHandler-1.0:     https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0
