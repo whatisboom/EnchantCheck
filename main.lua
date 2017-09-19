@@ -44,14 +44,14 @@ local ClassColor = {
 local CheckSlotEnchant = {
 	[INVSLOT_HEAD] = false,
 	[INVSLOT_NECK] = true,
-	[INVSLOT_SHOULDER] = false,
+	[INVSLOT_SHOULDER] = true,
 	[INVSLOT_BACK] = true,
 	[INVSLOT_CHEST] = false,
 	[INVSLOT_BODY] = false, -- shirt
 	[INVSLOT_TABARD] = false,
 	[INVSLOT_WRIST] = false,
 
-	[INVSLOT_HAND] = false,
+	[INVSLOT_HAND] = true,
 	[INVSLOT_WAIST] = false,
 	[INVSLOT_LEGS] = false,
 	[INVSLOT_FEET] = false,
