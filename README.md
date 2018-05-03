@@ -1,3 +1,5 @@
+![Travis CI](https://api.travis-ci.org/nyyr/EnchantCheck.svg)
+
 # Enchant Check
 
 Enchant Check allows you to quick-check your gear or the gear of the player you are currently inspecting: It shows a short report which tells you:
