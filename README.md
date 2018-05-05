@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/nyyr/EnchantCheck.svg](https://travis-ci.org/nyyr/EnchantCheck)
+[![Build Status](https://travis-ci.org/nyyr/EnchantCheck.svg)](https://travis-ci.org/nyyr/EnchantCheck)
 
 # Enchant Check
 
