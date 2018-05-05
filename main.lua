@@ -18,7 +18,7 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 ----------------------------------------------
 -- Version
 ----------------------------------------------
-EnchantCheck.version = "7.1.5.1"
+EnchantCheck.version = "@project-version@"
 EnchantCheck.authors = "nyyr, bsmorgan"
 
 -- Current max level for automated self-checks
