@@ -2,7 +2,7 @@
 ## Title: Enchant Check
 ## Notes: Adds a button to your character and inspect window that shows a summary of gear enchants and gems.
 ## Author: nyyr, bsmorgan
-## Version: 8.0.1.2
+## Version: @project-version@
 ## SavedVariables: EnchantCheckDB
 ## X-Category: Inventory
 ## X-WoWI-ID: 24626
