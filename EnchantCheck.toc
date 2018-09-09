@@ -2,7 +2,7 @@
 ## Title: Enchant Check
 ## Notes: Adds a button to your character and inspect window that shows a summary of gear enchants and gems.
 ## Author: nyyr, bsmorgan
-## Version: @project-version@
+## Version: 8.0.1.2
 ## SavedVariables: EnchantCheckDB
 ## X-Category: Inventory
 ## X-WoWI-ID: 24626
@@ -16,13 +16,9 @@ Libs\AceAddon-3.0\AceAddon-3.0.xml
 Libs\AceEvent-3.0\AceEvent-3.0.xml
 Libs\AceHook-3.0\AceHook-3.0.xml
 Libs\AceDB-3.0\AceDB-3.0.xml
-Libs\AceDBOptions-3.0\AceDBOptions-3.0.xml
 Libs\AceLocale-3.0\AceLocale-3.0.xml
 Libs\AceConsole-3.0\AceConsole-3.0.xml
-Libs\AceGUI-3.0\AceGUI-3.0.xml
-Libs\AceConfig-3.0\AceConfig-3.0.xml
 Libs\AceTimer-3.0\AceTimer-3.0.xml
-Libs\LibDialog-1.0\lib.xml
 Libs\LibBabble-Inventory-3.0\lib.xml
 #@end-no-lib-strip@
 
