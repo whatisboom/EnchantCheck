@@ -22,7 +22,7 @@ EnchantCheck.version = "@project-version@"
 EnchantCheck.authors = "nyyr, bsmorgan"
 
 -- Current max level for automated self-checks
-local MAX_LEVEL = 110
+local MAX_LEVEL = 60
 
 -- Setup class colors
 local ClassColor = {
@@ -39,7 +39,6 @@ local ClassColor = {
 	["MONK"] = 		"00FF96",
 	["DEMONHUNTER"] = "A330C9",
 }
-
 -- What slots need enchants?
 local CheckSlotEnchant = {
 	[INVSLOT_HEAD] = false,
@@ -49,12 +48,12 @@ local CheckSlotEnchant = {
 	[INVSLOT_CHEST] = false,
 	[INVSLOT_BODY] = false, -- shirt
 	[INVSLOT_TABARD] = false,
-	[INVSLOT_WRIST] = false,
+	[INVSLOT_WRIST] = false, -- set in self:CheckGear if primary stat is int
 
-	[INVSLOT_HAND] = true,
+	[INVSLOT_HAND] = false, -- set in self:CheckGear if primary stat is str
 	[INVSLOT_WAIST] = false,
 	[INVSLOT_LEGS] = false,
-	[INVSLOT_FEET] = false,
+	[INVSLOT_FEET] = false, -- set in self:CheckGear if primary stat is agi
 	[INVSLOT_FINGER1] = true,
 	[INVSLOT_FINGER2] = true,
 	[INVSLOT_TRINKET1] = false,
@@ -146,45 +145,47 @@ end
 ----------------------------------------------
 function EnchantCheck:OnInitialize()
 	-- Load our database
-	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile")
+	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile");
 
-	EnchantCheckFrameTitle:SetText("Enchant Check v"..self.version)
+	EnchantCheckFrameTitle:SetText("Enchant Check v"..self.version);
 
-	CharacterFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"])
-	InspectFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"])
-	InspectFrameInviteButton:SetText(L["BTN_INVITE"])
+	CharacterFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
+	InspectFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
+	InspectFrameInviteButton:SetText(L["BTN_INVITE"]);
 
-	EnchantCheckItemsFrame.titleFont:SetText(L["UI_ITEMS_TITLE"])
-	EnchantCheckGemsFrame.titleFont:SetText(L["UI_GEMS_TITLE"])
-	EnchantCheckEnchantsFrame.titleFont:SetText(L["UI_ENCHANTS_TITLE"])
+	EnchantCheckItemsFrame.titleFont:SetText(L["UI_ITEMS_TITLE"]);
+	EnchantCheckGemsFrame.titleFont:SetText(L["UI_GEMS_TITLE"]);
+	EnchantCheckEnchantsFrame.titleFont:SetText(L["UI_ENCHANTS_TITLE"]);
 
 	if self.db.profile.enable then
-		self:Enable()
+		self:Enable();
 	end
 
-	self:Debug(d_notice, L["LOADED"])
+	self:Debug(d_notice, L["LOADED"]);
 end
 
 ----------------------------------------------
 -- OnEnable()
 ----------------------------------------------
 function EnchantCheck:OnEnable()
-	self:RegisterEvent("INSPECT_READY")
-	self:RegisterEvent("UNIT_INVENTORY_CHANGED")
-	self:RegisterEvent("PLAYER_ENTERING_WORLD")
+	self:RegisterEvent("INSPECT_READY");
+	self:RegisterEvent("UNIT_INVENTORY_CHANGED");
+	self:RegisterEvent("PLAYER_ENTERING_WORLD");
+	self:RegisterEvent("PLAYER_LOGIN");
 
-	self:Debug(d_notice, L["ENABLED"])
+	self:Debug(d_notice, L["ENABLED"]);
 end
 
 ----------------------------------------------
 -- OnDisable()
 ----------------------------------------------
 function EnchantCheck:OnDisable()
-	self:UnregisterEvent("INSPECT_READY")
-	self:UnregisterEvent("UNIT_INVENTORY_CHANGED")
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+	self:UnregisterEvent("INSPECT_READY");
+	self:UnregisterEvent("UNIT_INVENTORY_CHANGED");
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
+	self:UnregisterEvent("PLAYER_LOGIN");
 
-	self:Debug(d_notice, L["DISABLED"])
+	self:Debug(d_notice, L["DISABLED"]);
 end
 
 ----------------------------------------------
@@ -292,6 +293,40 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local itemLevelSum = 0
 	local avgItemLevel = 0
 	local doRescan
+
+	local statStrings = {
+		["STRENGTH"] = "STRENGTH",
+		["AGILITY"] = "AGILITY",
+		["INTELLECT"] = "INTELLECT",
+	};
+
+	local primaryStats = {
+		[1] = statStrings.STRENGTH,
+		[2] = statStrings.AGILITY,
+		[4] = statStrings.INTELLECT,
+	};
+
+	local currentSpec = GetSpecialization();
+	local id, name, description, icon, role, primaryStatIndex = GetSpecializationInfo(currentSpec);
+	local primaryStat = primaryStats[primaryStatIndex];
+
+
+
+	if primaryStat == statStrings.AGILITY then
+		CheckSlotEnchant[INVSLOT_FEET] = true;
+		CheckSlotEnchant[INVSLOT_WRIST] = false;
+		CheckSlotEnchant[INVSLOT_HAND] = false;
+	end
+	if primaryStat == statStrings.STRENGTH then
+		CheckSlotEnchant[INVSLOT_FEET] = false;
+		CheckSlotEnchant[INVSLOT_WRIST] = false;
+		CheckSlotEnchant[INVSLOT_HAND] = true;
+	end
+	if primaryStat == statStrings.INTELLECT then
+		CheckSlotEnchant[INVSLOT_FEET] = false;
+		CheckSlotEnchant[INVSLOT_WRIST] = true;
+		CheckSlotEnchant[INVSLOT_HAND] = false;
+	end
 
 	if not items then items = {} end
 	if not iter then iter = 0 end
@@ -639,17 +674,17 @@ end
 function EnchantCheck:INSPECT_READY(event, guid)
 	-- inspect frame is load-on-demand, add buttons once it is loaded
 	if not InspectFrameEnchantCheckButton:GetParent() and InspectPaperDollFrame then
-		InspectFrameEnchantCheckButton:SetParent(InspectPaperDollFrame)
-		InspectFrameEnchantCheckButton:ClearAllPoints()
-		InspectFrameEnchantCheckButton:SetPoint("LEFT", InspectPaperDollFrame, "BOTTOMLEFT", 10, 20)
-		InspectFrameEnchantCheckButton:Show()
-
-		InspectFrameInviteButton:SetParent(InspectPaperDollFrame)
-		InspectFrameInviteButton:ClearAllPoints()
-		InspectFrameInviteButton:SetPoint("RIGHT", InspectPaperDollFrame, "BOTTOMRIGHT", -12, 20)
-		InspectFrameInviteButton:Show()
-
-		self:HookScript(InspectFrame, "OnHide", "InspectFrame_OnHide")
+		local isElvUILoaded = IsAddOnLoaded("ElvUI");
+		local topPosition = isElvUILoaded and -50 or 20;
+		InspectFrameEnchantCheckButton:SetParent(InspectPaperDollFrame);
+		InspectFrameEnchantCheckButton:ClearAllPoints();
+		InspectFrameInviteButton:SetParent(InspectPaperDollFrame);
+		InspectFrameInviteButton:ClearAllPoints();
+		InspectFrameEnchantCheckButton:SetPoint("LEFT", InspectPaperDollFrame, "BOTTOMLEFT", 10, topPosition);
+		InspectFrameInviteButton:SetPoint("RIGHT", InspectPaperDollFrame, "BOTTOMRIGHT", -12, topPosition);
+		InspectFrameEnchantCheckButton:Show();
+		InspectFrameInviteButton:Show();
+		self:HookScript(InspectFrame, "OnHide", "InspectFrame_OnHide");
 
 		--self:Debug(d_notice, "Added inspect buttons")
 	end
@@ -696,4 +731,19 @@ function EnchantCheck:PLAYER_ENTERING_WORLD(event)
 	if inInstance and (instanceType ~= "none") and (UnitLevel("player") == MAX_LEVEL) then
 		self:CheckGear("player", nil, nil, true)
 	end
+end
+
+----------------------------------------------
+-- PLAYER_LOGIN()
+----------------------------------------------
+function EnchantCheck:PLAYER_LOGIN(event)
+	local isElvUILoaded = IsAddOnLoaded("ElvUI");
+	local checkButton = CharacterFrameEnchantCheckButton;
+
+	if isElvUILoaded and checkButton then
+		checkButton:ClearAllPoints();
+		checkButton:SetPoint("RIGHT", checkButton:GetParent(), "BOTTOMRIGHT", "-10", "15");
+	end
+
+	
 end

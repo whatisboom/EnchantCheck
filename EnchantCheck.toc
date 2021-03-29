@@ -1,7 +1,7 @@
-## Interface: 80100
+## Interface: 90005
 ## Title: Enchant Check
 ## Notes: Adds a button to your character and inspect window that shows a summary of gear enchants and gems.
-## Author: nyyr, bsmorgan
+## Author: nyyr, bsmorgan, whatisboom
 ## Version: @project-version@
 ## SavedVariables: EnchantCheckDB
 ## X-Category: Inventory

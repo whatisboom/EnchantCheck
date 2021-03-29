@@ -1,13 +1,14 @@
 sudo: false
 language: c
-  
+
 addons:
   apt:
     packages:
-    - pandoc
-  
+      - pandoc
+
 script: curl -s https://raw.githubusercontent.com/BigWigsMods/packager/master/release.sh | bash
-  
+
 branches:
   only:
-  - /^(v|t)?\d+\.\d+(\.\d+)?(\.\d+)?(-\S*)?$/
+    - /^(v|t)?\d+\.\d+(\.\d+)?(\.\d+)?(-\S*)?$/
+    - /^feature/
