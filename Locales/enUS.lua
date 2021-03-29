@@ -8,7 +8,7 @@ L["ENABLED"] = "enabled."
 L["DISABLED"] = "disabled."
 L["LOADED"] = "loaded."
 
-L["BTN_CHECK_ENCHANTS"] = "Check"
+L["BTN_CHECK_ENCHANTS"] = "Check Gear"
 L["BTN_INVITE"] = "Invite"
 
 L["UI_ITEMS_TITLE"] = "Gear"

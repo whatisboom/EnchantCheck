@@ -65,7 +65,7 @@
 	</Frames>
 </Frame>
 
-<Frame name="EnchantCheckFrame" frameStrata="MEDIUM" parent="CharacterModelFrame" setAllPoints="true" hidden="true">
+<Frame name="EnchantCheckFrame" frameStrata="HIGH" parent="CharacterModelFrame" setAllPoints="true" hidden="true">
 	<Layers>
 		<Layer level="BACKGROUND" textureSubLevel="-1">
 			<Texture name="$parentBG" setAllPoints="true">
@@ -117,10 +117,10 @@
 </Frame>
 
 <Button name="CharacterFrameEnchantCheckButton" inherits="UIPanelButtonTemplate" parent="PaperDollFrame" text="Check">
-	<Size x="50" y="20"/>
+	<Size x="112" y="20"/>
 	<Anchors>
 		<Anchor point="LEFT" relativePoint="BOTTOMLEFT">
-			<Offset><AbsDimension x="72" y="20"/></Offset>
+			<Offset><AbsDimension x="10" y="20"/></Offset>
 		</Anchor>
 	</Anchors>
 	<Scripts>
@@ -131,7 +131,7 @@
 </Button>
 
 <Button name="InspectFrameEnchantCheckButton" inherits="UIPanelButtonTemplate" text="Check">
-	<Size x="110" y="20"/>
+	<Size x="112" y="20"/>
 	<Scripts>
 		<OnClick>
 			EnchantCheck:CheckInspected()
