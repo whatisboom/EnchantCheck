@@ -5,6 +5,7 @@
 ## Version: @project-version@
 ## SavedVariables: EnchantCheckDB
 ## X-Category: Inventory
+## X-WoWI-ID: 26100
 ## X-Curse-Project-ID: 461349
 
 #### List of embedded libraries

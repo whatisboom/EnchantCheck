@@ -14,7 +14,7 @@ It does NOT tell you, whether you chose the right enchants, gems, or items. It s
 ## Downloading
 
 - On Github under [releases](https://github.com/whatisboom/EnchantCheck/releases)
-<!-- * On [WoW Interface](http://www.wowinterface.com/downloads/info24626-EnchantCheck.html) -->
+- On [WoW Interface](http://www.wowinterface.com/downloads/info26100-EnchantCheckUpdated.html)
 - On [CurseForge](https://www.curseforge.com/wow/addons/enchantcheck)
 
 ## Developer Notes
