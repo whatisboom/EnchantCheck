@@ -19,33 +19,33 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Version
 ----------------------------------------------
 EnchantCheck.version = "@project-version@"
-EnchantCheck.authors = "nyyr, bsmorgan"
+EnchantCheck.authors = "nyyr, bsmorgan, whatisboom"
 
 -- Current max level for automated self-checks
 local MAX_LEVEL = 60
 
 -- Setup class colors
 local ClassColor = {
-	["MAGE"] =		"69CCF0",
-	["WARLOCK"] =	"9482C9",
-	["PRIEST"] =	"FFFFFF",
-	["DRUID"] =		"FF7D0A",
-	["SHAMAN"] =	"0070DE",
-	["PALADIN"] =	"F58CBA",
-	["ROGUE"] =		"FFF569",
-	["HUNTER"] =	"ABD473",
-	["WARRIOR"] =	"C79C6E",
+	["MAGE"] =		  "69CCF0",
+	["WARLOCK"] =	  "9482C9",
+	["PRIEST"] =	  "FFFFFF",
+	["DRUID"] =		  "FF7D0A",
+	["SHAMAN"] =	  "0070DE",
+	["PALADIN"] =	  "F58CBA",
+	["ROGUE"] =		  "FFF569",
+	["HUNTER"] =	  "ABD473",
+	["WARRIOR"] =	  "C79C6E",
 	["DEATHKNIGHT"] = "C41F3B",
-	["MONK"] = 		"00FF96",
+	["MONK"] = 		  "00FF96",
 	["DEMONHUNTER"] = "A330C9",
 }
 -- What slots need enchants?
 local CheckSlotEnchant = {
 	[INVSLOT_HEAD] = false,
-	[INVSLOT_NECK] = true,
-	[INVSLOT_SHOULDER] = true,
+	[INVSLOT_NECK] = false,
+	[INVSLOT_SHOULDER] = false,
 	[INVSLOT_BACK] = true,
-	[INVSLOT_CHEST] = false,
+	[INVSLOT_CHEST] = true,
 	[INVSLOT_BODY] = false, -- shirt
 	[INVSLOT_TABARD] = false,
 	[INVSLOT_WRIST] = false, -- set in self:CheckGear if primary stat is int
@@ -217,8 +217,20 @@ end
 
 function EnchantCheck:GetItemLinkInfo(link)
 	local itemColor, itemString, itemName;
+	local pattern = "(|c%x+)|Hitem:([-%d:]*)|h%[(.-)%]|h|r";
+	local itemColorPattern = "(|c%x+)";
+	local itemStringPattern = "|Hitem:([-%d:]*)";
+	local itemNamePattern = "|h%[(.-)%]|h|r";
+	-- print("link", link);
 	if ( link ) then
-		itemColor, itemString, itemName = link:match("(|c%x+)|Hitem:([-%d:]+)|h%[(.-)%]|h|r");
+		itemColor = link:match(itemColorPattern);
+		itemString = link:match(itemStringPattern);
+		itemName = link:match(itemNamePattern);
+		-- itemColor, itemString, itemName = link:match(pattern);
+		-- print("link:match", link:match(pattern));
+		-- print("itemColor", itemColor);
+		-- print("itemString", itemString);
+		-- print("itemName", itemName);
 	end
 	return itemName, itemString, itemColor;
 end
@@ -256,6 +268,7 @@ function EnchantCheck:GetItemGemString(link)
 	local gemString;
 	-- itemId:enchantId:jewelId1:jewelId2:jewelId3:jewelId4:suffixId:uniqueId:linkLevel
 	if ( itemString ) then
+		print("itemString", itemString);
 		local ids = self:StringSplit(":", itemString);
 		local gemLink, hasGems;
 		for i = 1, 4 do
@@ -349,9 +362,9 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		end
 
 		if item.link and itemLink then
---			print("slot= "..tostring(i)..", itemName= "..tostring(itemName))
+			-- print("slot= "..tostring(i)..", itemName= "..tostring(itemName))
 			local printable = gsub(itemLink, "\124", "\124\124");
---			print("itemLink: \""..printable.."\"")
+			-- print("itemLink: \""..printable.."\"")
 			local _, itemString = self:GetItemLinkInfo(item.link)
 --			print("itemString: \""..itemString.."\"")
 			local ids = self:StringSplit(":", itemString)
