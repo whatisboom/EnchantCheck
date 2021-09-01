@@ -147,7 +147,7 @@ function EnchantCheck:OnInitialize()
 	-- Load our database
 	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile");
 
-	EnchantCheckFrameTitle:SetText("Enchant Check v"..self.version);
+	EnchantCheckFrameTitle:SetText("Enchant Check "..self.version);
 
 	CharacterFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
 	InspectFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
