@@ -322,7 +322,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	-- print("unit", unit);
 	local isInspect = not UnitIsUnit("player", unit);
 	-- print("isInspect", isInspect);
-	local currentSpec = GetSpecialization(isInspect);
+	local currentSpec = GetSpecialization();
 	-- if isInspect and currentSpec == nil then
 	-- 	currentSpec = GetInspectSpecialization(unit);
 	-- end
