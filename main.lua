@@ -319,23 +319,33 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		[4] = statStrings.INTELLECT,
 	};
 
-	local currentSpec = GetSpecialization();
-	local id, name, description, icon, role, primaryStatIndex = GetSpecializationInfo(currentSpec);
+	-- print("unit", unit);
+	local isInspect = not UnitIsUnit("player", unit);
+	-- print("isInspect", isInspect);
+	local currentSpec = GetSpecialization(isInspect);
+	-- if isInspect and currentSpec == nil then
+	-- 	currentSpec = GetInspectSpecialization(unit);
+	-- end
+	-- print("currentSpec", currentSpec);
+	local primaryStatIndex = select(6, GetSpecializationInfo(currentSpec));
 	local primaryStat = primaryStats[primaryStatIndex];
 
 
-
-	if primaryStat == statStrings.AGILITY then
+	if isInspect then
+		-- cannot determine accurately primary stat for inspected targets
+		-- https://wowpedia.fandom.com/wiki/API_GetSpecializationInfo#Details
+		CheckSlotEnchant[INVSLOT_FEET] = true;
+		CheckSlotEnchant[INVSLOT_WRIST] = true;
+		CheckSlotEnchant[INVSLOT_HAND] = true;
+	elseif primaryStat == statStrings.AGILITY then
 		CheckSlotEnchant[INVSLOT_FEET] = true;
 		CheckSlotEnchant[INVSLOT_WRIST] = false;
 		CheckSlotEnchant[INVSLOT_HAND] = false;
-	end
-	if primaryStat == statStrings.STRENGTH then
+	elseif primaryStat == statStrings.STRENGTH then
 		CheckSlotEnchant[INVSLOT_FEET] = false;
 		CheckSlotEnchant[INVSLOT_WRIST] = false;
 		CheckSlotEnchant[INVSLOT_HAND] = true;
-	end
-	if primaryStat == statStrings.INTELLECT then
+	elseif primaryStat == statStrings.INTELLECT then
 		CheckSlotEnchant[INVSLOT_FEET] = false;
 		CheckSlotEnchant[INVSLOT_WRIST] = true;
 		CheckSlotEnchant[INVSLOT_HAND] = false;
