@@ -65,7 +65,7 @@
 	</Frames>
 </Frame>
 
-<Frame name="EnchantCheckFrame" frameStrata="HIGH" parent="CharacterModelFrame" setAllPoints="true" hidden="true">
+<Frame name="EnchantCheckFrame" frameStrata="HIGH" parent="CharacterModelScene" setAllPoints="true" hidden="true">
 	<Layers>
 		<Layer level="BACKGROUND" textureSubLevel="-1">
 			<Texture name="$parentBG" setAllPoints="true">
