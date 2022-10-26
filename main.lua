@@ -38,6 +38,7 @@ local ClassColor = {
 	["DEATHKNIGHT"] = "C41F3B",
 	["MONK"] = 		  "00FF96",
 	["DEMONHUNTER"] = "A330C9",
+--	["EVOKER"] = "33937F",
 }
 -- What slots need enchants?
 local CheckSlotEnchant = {
@@ -600,9 +601,9 @@ end
 ----------------------------------------------
 function EnchantCheck:CheckCharacter()
 	if not self.scanInProgress then
-		if EnchantCheckFrame:GetParent() ~= CharacterModelFrame then
+		if EnchantCheckFrame:GetParent() ~= CharacterModelScene then
 			EnchantCheckFrame:Hide()
-			EnchantCheckFrame:SetParent(CharacterModelFrame)
+			EnchantCheckFrame:SetParent(CharacterModelScene)
 			EnchantCheckFrame:ClearAllPoints()
 			EnchantCheckFrame:SetAllPoints()
 		elseif EnchantCheckFrame:IsShown() then
