@@ -38,7 +38,7 @@ local ClassColor = {
 	["DEATHKNIGHT"] = "C41F3B",
 	["MONK"] = 		  "00FF96",
 	["DEMONHUNTER"] = "A330C9",
---	["EVOKER"] = "33937F",
+	["EVOKER"] = "33937F",
 }
 -- What slots need enchants?
 local CheckSlotEnchant = {
