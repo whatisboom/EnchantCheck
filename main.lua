@@ -152,7 +152,6 @@ function EnchantCheck:OnInitialize()
 
 	CharacterFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
 	InspectFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
-	InspectFrameInviteButton:SetText(L["BTN_INVITE"]);
 
 	EnchantCheckItemsFrame.titleFont:SetText(L["UI_ITEMS_TITLE"]);
 	EnchantCheckGemsFrame.titleFont:SetText(L["UI_GEMS_TITLE"]);
@@ -649,15 +648,6 @@ function EnchantCheck:CheckInspected()
 end
 
 ----------------------------------------------
--- InviteInspected()
-----------------------------------------------
-function EnchantCheck:InviteInspected()
-	if InspectFrame.unit then
-		InviteUnit(UnitName(InspectFrame.unit))
-	end
-end
-
-----------------------------------------------
 -- ClearCheckFrame(frame)
 ----------------------------------------------
 function EnchantCheck:ClearCheckFrame(frame)
@@ -703,12 +693,8 @@ function EnchantCheck:INSPECT_READY(event, guid)
 		local topPosition = isElvUILoaded and -50 or 20;
 		InspectFrameEnchantCheckButton:SetParent(InspectPaperDollFrame);
 		InspectFrameEnchantCheckButton:ClearAllPoints();
-		InspectFrameInviteButton:SetParent(InspectPaperDollFrame);
-		InspectFrameInviteButton:ClearAllPoints();
 		InspectFrameEnchantCheckButton:SetPoint("LEFT", InspectPaperDollFrame, "BOTTOMLEFT", 10, topPosition);
-		InspectFrameInviteButton:SetPoint("RIGHT", InspectPaperDollFrame, "BOTTOMRIGHT", -12, topPosition);
 		InspectFrameEnchantCheckButton:Show();
-		InspectFrameInviteButton:Show();
 		self:HookScript(InspectFrame, "OnHide", "InspectFrame_OnHide");
 
 		--self:Debug(d_notice, "Added inspect buttons")
