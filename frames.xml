@@ -139,13 +139,4 @@
 	</Scripts>
 </Button>
 
-<Button name="InspectFrameInviteButton" inherits="UIPanelButtonTemplate" text="Invite">
-	<Size x="112" y="20"/>
-	<Scripts>
-		<OnClick>
-			EnchantCheck:InviteInspected()
-		</OnClick>
-	</Scripts>
-</Button>
-
 </Ui>
