@@ -49,7 +49,7 @@ local CheckSlotEnchant = {
 	[INVSLOT_CHEST] = true,
 	[INVSLOT_BODY] = false, -- shirt
 	[INVSLOT_TABARD] = false,
-	[INVSLOT_WRIST] = false, -- set in self:CheckGear if primary stat is int
+	[INVSLOT_WRIST] = true, -- set in self:CheckGear if primary stat is int
 
 	[INVSLOT_HAND] = false, -- set in self:CheckGear if primary stat is str
 	[INVSLOT_WAIST] = false,
@@ -331,25 +331,25 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local primaryStat = primaryStats[primaryStatIndex];
 
 
-	if isInspect then
-		-- cannot determine accurately primary stat for inspected targets
-		-- https://wowpedia.fandom.com/wiki/API_GetSpecializationInfo#Details
-		CheckSlotEnchant[INVSLOT_FEET] = true;
-		CheckSlotEnchant[INVSLOT_WRIST] = true;
-		CheckSlotEnchant[INVSLOT_HAND] = true;
-	elseif primaryStat == statStrings.AGILITY then
-		CheckSlotEnchant[INVSLOT_FEET] = true;
-		CheckSlotEnchant[INVSLOT_WRIST] = false;
-		CheckSlotEnchant[INVSLOT_HAND] = false;
-	elseif primaryStat == statStrings.STRENGTH then
-		CheckSlotEnchant[INVSLOT_FEET] = false;
-		CheckSlotEnchant[INVSLOT_WRIST] = false;
-		CheckSlotEnchant[INVSLOT_HAND] = true;
-	elseif primaryStat == statStrings.INTELLECT then
-		CheckSlotEnchant[INVSLOT_FEET] = false;
-		CheckSlotEnchant[INVSLOT_WRIST] = true;
-		CheckSlotEnchant[INVSLOT_HAND] = false;
-	end
+	-- if isInspect then
+	-- 	-- cannot determine accurately primary stat for inspected targets
+	-- 	-- https://wowpedia.fandom.com/wiki/API_GetSpecializationInfo#Details
+	-- 	CheckSlotEnchant[INVSLOT_FEET] = true;
+	-- 	CheckSlotEnchant[INVSLOT_WRIST] = true;
+	-- 	CheckSlotEnchant[INVSLOT_HAND] = true;
+	-- elseif primaryStat == statStrings.AGILITY then
+	-- 	CheckSlotEnchant[INVSLOT_FEET] = true;
+	-- 	CheckSlotEnchant[INVSLOT_WRIST] = false;
+	-- 	CheckSlotEnchant[INVSLOT_HAND] = false;
+	-- elseif primaryStat == statStrings.STRENGTH then
+	-- 	CheckSlotEnchant[INVSLOT_FEET] = false;
+	-- 	CheckSlotEnchant[INVSLOT_WRIST] = false;
+	-- 	CheckSlotEnchant[INVSLOT_HAND] = true;
+	-- elseif primaryStat == statStrings.INTELLECT then
+	-- 	CheckSlotEnchant[INVSLOT_FEET] = false;
+	-- 	CheckSlotEnchant[INVSLOT_WRIST] = true;
+	-- 	CheckSlotEnchant[INVSLOT_HAND] = false;
+	-- end
 
 	if not items then items = {} end
 	if not iter then iter = 0 end
