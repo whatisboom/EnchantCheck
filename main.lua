@@ -49,12 +49,12 @@ local CheckSlotEnchant = {
 	[INVSLOT_CHEST] = true,
 	[INVSLOT_BODY] = false, -- shirt
 	[INVSLOT_TABARD] = false,
-	[INVSLOT_WRIST] = true, -- set in self:CheckGear if primary stat is int
+	[INVSLOT_WRIST] = true,
 
-	[INVSLOT_HAND] = false, -- set in self:CheckGear if primary stat is str
+	[INVSLOT_HAND] = false,
 	[INVSLOT_WAIST] = false,
 	[INVSLOT_LEGS] = false,
-	[INVSLOT_FEET] = false, -- set in self:CheckGear if primary stat is agi
+	[INVSLOT_FEET] = true,
 	[INVSLOT_FINGER1] = true,
 	[INVSLOT_FINGER2] = true,
 	[INVSLOT_TRINKET1] = false,
@@ -331,6 +331,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local primaryStat = primaryStats[primaryStatIndex];
 
 
+	--  -- No Longer needed as DF doesn't support primary stats in these slots
 	-- if isInspect then
 	-- 	-- cannot determine accurately primary stat for inspected targets
 	-- 	-- https://wowpedia.fandom.com/wiki/API_GetSpecializationInfo#Details
