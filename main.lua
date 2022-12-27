@@ -1,8 +1,7 @@
 ----------------------------------------------
 -- Module
 ----------------------------------------------
-EnchantCheck = LibStub("AceAddon-3.0"):NewAddon("Enchant Check",
-	"AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0", "AceTimer-3.0");
+EnchantCheck = LibStub("AceAddon-3.0"):NewAddon("Enchant Check", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0", "AceTimer-3.0");
 
 ----------------------------------------------
 -- Localization
