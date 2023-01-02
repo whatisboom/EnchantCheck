@@ -52,7 +52,7 @@ local CheckSlotEnchant = {
 
 	[INVSLOT_HAND] = false,
 	[INVSLOT_WAIST] = false,
-	[INVSLOT_LEGS] = false,
+	[INVSLOT_LEGS] = true,
 	[INVSLOT_FEET] = true,
 	[INVSLOT_FINGER1] = true,
 	[INVSLOT_FINGER2] = true,
