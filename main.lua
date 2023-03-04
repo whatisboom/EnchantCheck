@@ -406,7 +406,8 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 				(item.stats['EMPTY_SOCKET_BLUE'] or 0) +
 				(item.stats['EMPTY_SOCKET_META'] or 0) +
 				(item.stats['EMPTY_SOCKET_PRISMATIC'] or 0) +
-				(item.stats['EMPTY_SOCKET_DOMINATION'] or 0)
+				(item.stats['EMPTY_SOCKET_DOMINATION'] or 0) +
+				(item.stats['EMPTY_SOCKET_PRIMORDIAL'] or 0)
 
 			-- missing gems
 			if item.gems < item.sockets then
