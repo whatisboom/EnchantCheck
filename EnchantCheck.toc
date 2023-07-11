@@ -1,4 +1,4 @@
-## Interface: 100700
+## Interface: 101500
 ## Title: Enchant Check
 ## Notes: Adds a button to your character and inspect window that shows a summary of gear enchants and gems.
 ## Author: nyyr, bsmorgan, whatisboom
