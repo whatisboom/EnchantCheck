@@ -129,7 +129,7 @@ EnchantCheck.defaults = {
 local d_warn = 1
 local d_info = 2
 local d_notice = 3
-local debugLevel = d_notice
+local debugLevel = d_warn
 
 ----------------------------------------------
 -- Print debug message
