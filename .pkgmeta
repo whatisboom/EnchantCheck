@@ -9,14 +9,14 @@ ignore:
 - Libs/LibItemUpgradeInfo-1.0/LibStub/tests
 
 externals:
-Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
-Libs/CallbackHandler-1.0: https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0
-Libs/AceAddon-3.0: https://repos.wowace.com/wow/ace3/trunk/AceAddon-3.0
-Libs/AceConsole-3.0: https://repos.wowace.com/wow/ace3/trunk/AceConsole-3.0
-Libs/AceLocale-3.0: https://repos.wowace.com/wow/ace3/trunk/AceLocale-3.0
-Libs/AceDB-3.0: https://repos.wowace.com/wow/ace3/trunk/AceDB-3.0
-Libs/AceHook-3.0: https://repos.wowace.com/wow/ace3/trunk/AceHook-3.0
-Libs/AceEvent-3.0: https://repos.wowace.com/wow/ace3/trunk/AceEvent-3.0
-Libs/AceTimer-3.0: https://repos.wowace.com/wow/ace3/trunk/AceTimer-3.0
-Libs/LibBabble-Inventory-3.0: https://repos.wowace.com/wow/libbabble-inventory-3-0/trunk
+Libs/LibStub: https://github.com/czottmann/wow-addons/tree/master/AddOns/Quartz/libs/LibStub
+Libs/CallbackHandler-1.0: https://github.com/hurricup/WoW-Ace3/tree/master/CallbackHandler-1.0
+Libs/AceAddon-3.0: https://github.com/hurricup/WoW-Ace3/tree/master/AceAddon-3.0
+Libs/AceConsole-3.0: https://github.com/hurricup/WoW-Ace3/tree/master/AceConsole-3.0
+Libs/AceLocale-3.0: hhttps://github.com/hurricup/WoW-Ace3/tree/master/AceLocale-3.0
+Libs/AceDB-3.0: https://github.com/hurricup/WoW-Ace3/tree/master/AceDB-3.0
+Libs/AceHook-3.0: https://github.com/hurricup/WoW-Ace3/tree/master/AceHook-3.0
+Libs/AceEvent-3.0: https://github.com/hurricup/WoW-Ace3/tree/master/AceEvent-3.0
+Libs/AceTimer-3.0: https://github.com/hurricup/WoW-Ace3/tree/master/AceTimer-3.0
+Libs/LibBabble-Inventory-3.0: https://github.com/czottmann/wow-addons/tree/master/AddOns/AutoProfitX/libs/LibBabble-Inventory-3.0
 Libs/LibItemUpgradeInfo-1.0: git://git.wowace.com/wow/libitemupgradeinfo-1-/mainline.git
