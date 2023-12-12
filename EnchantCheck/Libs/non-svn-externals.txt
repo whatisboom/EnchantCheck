@@ -1,0 +1,3 @@
+
+LibItemUpgradeInfo-1.0:  https://repos.wowace.com/wow/libitemupgradeinfo-1-0
+
