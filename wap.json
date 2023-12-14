@@ -1,10 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/t-mart/wap/master/src/wap/schema/wap.schema.json",
   "name": "EnchantCheck",
-  "version": "10.2.0-3",
+  "version": "10.2.5-1",
   "author": "whatisboom",
   "wowVersions": {
-    "mainline": "10.2.0"
+    "mainline": "10.2.5"
   },
   "publish": {
     "curseforge": {
