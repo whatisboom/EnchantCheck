@@ -17,7 +17,7 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 ----------------------------------------------
 -- Version
 ----------------------------------------------
-EnchantCheck.version = "@project-version@"
+EnchantCheck.version = "10.2.5-2"
 EnchantCheck.authors = "nyyr, bsmorgan, whatisboom"
 
 -- Current max level for automated self-checks
@@ -351,7 +351,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	-- 	CheckSlotEnchant[INVSLOT_HAND] = false;
 	-- end
 
-	if not isInspect and C_QuestLog.IsQuestFlaggedCompleted(78421) and GetExpansionLevel() == 9 then -- right now only enable for Dragonflight
+	if not isInspect and C_QuestLog.IsQuestFlaggedCompleted(78429) and GetExpansionLevel() == 9 then -- right now only enable for Dragonflight
 		-- will update with final quest once i can find the ID
 		CheckSlotEnchant[INVSLOT_HEAD] = true
 	end
