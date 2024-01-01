@@ -1,0 +1,16 @@
+{
+  "name": "enchantcheck",
+  "version": "10.2.5",
+  "description": "Enchant Check allows you to quick-check your gear or the gear of the player you are currently inspecting.",
+  "main": "EnchantCheck/main.lua",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prebuild": "node ./prebuild.js",
+    "build": "wap build --link",
+    "postbuild": "node ./postbuild.js",
+    "load": "source ./.env",
+    "publish": "wap publish --curseforge-token=$CURSEFORGE_TOKEN"
+  },
+  "author": "",
+  "license": "ISC"
+}
