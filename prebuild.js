@@ -13,19 +13,21 @@ readline.question('Enter current game version: ', version => {
   const versionWithBuild = pieces.length > 1 && pieces[0] === version ? `${version}-${buildNumber+1}` : `${version}-1`;
   config.version = versionWithBuild;
   config.wowVersions.mainline = version;
-  fs.writeFileSync('./wap.json', JSON.stringify(config), 'utf-8');
-  fs.readFile(main, 'utf-8', function (err, data) {
-    if (err) {
-      console.log(err);
-      return;
-    }
+  try {
+    fs.writeFileSync('./wap.json', JSON.stringify(config), 'utf-8');
+  } catch(e) {
+    console.error(`Error writing file 'wap.json': `, e);
+  }
+  try {
+    const data = fs.readFileSync(main, 'utf-8');
     built = data.replace('@project_version@', `v${config.version}`);
-    fs.writeFile(main, built, 'utf-8', function(err) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log('replaced')
-    }); 
-  });
+    try {
+      fs.writeFileSync(main, built, 'utf-8'); 
+      console.log(`replaced @project_version@ with ${versionWithBuild}`);
+    } catch(e) {
+      console.error(`Error writing file ${main}: `, e);
+    }
+  } catch (e) {
+    console.error(`Error reading file ${main}: `, e);
+  }
 });

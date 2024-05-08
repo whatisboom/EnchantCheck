@@ -14,6 +14,6 @@ fs.readFile(main, 'utf-8', function (err, data) {
       console.log(err);
       return;
     }
-    console.log('restored')
+    console.log(`replaced ${version} with '@project_version@'`)
   }); 
 });
