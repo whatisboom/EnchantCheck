@@ -14,7 +14,7 @@ readline.question('Enter current game version: ', version => {
   config.version = versionWithBuild;
   config.wowVersions.mainline = version;
   try {
-    fs.writeFileSync('./wap.json', JSON.stringify(config), 'utf-8');
+    fs.writeFileSync('./wap.json', JSON.stringify(config, null, 2), 'utf-8');
   } catch(e) {
     console.error(`Error writing file 'wap.json': `, e);
   }
