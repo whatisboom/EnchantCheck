@@ -62,7 +62,7 @@ The addon features an intelligent notification system that adapts warnings based
 ```
 
 ## Version Information
-- **Current Version**: v11.2.0-1
+- **Current Version**: v11.1.7-1
 - **WoW Interface**: 110105 (supports current retail version)
 - **Author**: whatisboom
 - **License**: GNU General Public License v3.0

@@ -1,6 +1,6 @@
 ## Author: whatisboom
 ## Title: EnchantCheck
-## Version: 11.2.0-1
+## Version: 11.1.7-1
 ## OptionalDeps: Ace3, AceAddon, AceConsole, AceDB, AceEvent, AceHook, AceLocale, AceTimer, LibStub, CallbackHandler, LibBabble, LibItemUpgradeInfo
 ## Interface: 110105
 ## Notes: Enchant Check allows you to quick-check your gear or the gear of the player you are currently inspecting.

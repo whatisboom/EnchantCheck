@@ -9,7 +9,7 @@ _G.EnchantCheckConstants = EnchantCheckConstants
 ----------------------------------------------
 -- Version and Info
 ----------------------------------------------
-EnchantCheckConstants.VERSION = "v11.2.0-1"
+EnchantCheckConstants.VERSION = "v11.1.7-1"
 EnchantCheckConstants.AUTHORS = "whatisboom"
 
 ----------------------------------------------
