@@ -3,6 +3,7 @@
 
 # Distribution files
 *.zip
+dist
 
 # OS generated files
 .DS_Store
@@ -15,3 +16,9 @@ Thumbs.db
 
 # WoW saved variables (if any)
 *.lua.bak
+
+# Python/development environment
+.env
+lib
+pyvenv.cfg
+bin
