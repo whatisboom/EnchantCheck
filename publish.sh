@@ -15,10 +15,10 @@ echo -e "${GREEN}EnchantCheck CurseForge Publisher${NC}"
 echo "=================================="
 
 # Check for API key
-if [ -z "$CURSEFORGE_API_KEY" ]; then
-    echo -e "${RED}Error: CURSEFORGE_API_KEY environment variable not set${NC}"
+if [ -z "$CURSEFORGE_API_TOKEN" ]; then
+    echo -e "${RED}Error: CURSEFORGE_API_TOKEN environment variable not set${NC}"
     echo "Please set your CurseForge API key:"
-    echo "  export CURSEFORGE_API_KEY='your-api-key-here'"
+    echo "  export CURSEFORGE_API_TOKEN='your-api-key-here'"
     exit 1
 fi
 
@@ -76,19 +76,17 @@ if [ -z "$CHANGELOG" ]; then
     CHANGELOG=$(git log --pretty=format:"- %s" -n 10)
 fi
 
-# Determine game version
-GAME_VERSION="10.2.0"  # Default
-if [[ "$VERSION" == *"11."* ]]; then
-    GAME_VERSION="11.0.0"
-fi
+# Determine game version - use current retail game version ID
+GAME_VERSION_ID="10984"  # WoW 11.1.7 Retail
 
-# Prepare metadata
+# Prepare metadata with proper JSON escaping
+CHANGELOG_JSON=$(echo "$CHANGELOG" | jq -Rs .)
 METADATA=$(cat <<EOF
 {
-  "changelog": $(echo "$CHANGELOG" | jq -Rs .),
+  "changelog": ${CHANGELOG_JSON},
   "changelogType": "markdown",
   "displayName": "${ADDON_NAME} ${VERSION}",
-  "gameVersions": [${GAME_VERSION}],
+  "gameVersions": [${GAME_VERSION_ID}],
   "releaseType": "release"
 }
 EOF
@@ -97,10 +95,10 @@ EOF
 # Upload to CurseForge
 echo -e "\n${YELLOW}Uploading to CurseForge...${NC}"
 echo "Project ID: $PROJECT_ID"
-echo "Game Version: $GAME_VERSION"
+echo "Game Version ID: $GAME_VERSION_ID"
 
 RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -H "X-Api-Token: ${CURSEFORGE_API_KEY}" \
+  -H "X-Api-Token: ${CURSEFORGE_API_TOKEN}" \
   -F "metadata=${METADATA}" \
   -F "file=@${TEMP_DIR}/${ZIP_FILE}" \
   "https://minecraft.curseforge.com/api/projects/${PROJECT_ID}/upload-file")

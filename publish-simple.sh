@@ -7,8 +7,8 @@ VERSION=${1:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}
 PROJECT_ID="461349"
 ADDON_NAME="EnchantCheck"
 
-if [ -z "$CURSEFORGE_API_KEY" ]; then
-    echo "Error: Set CURSEFORGE_API_KEY environment variable"
+if [ -z "$CURSEFORGE_API_TOKEN" ]; then
+    echo "Error: Set CURSEFORGE_API_TOKEN environment variable"
     exit 1
 fi
 
@@ -35,7 +35,7 @@ cd "$TEMP_DIR" && zip -r "$ZIP_FILE" "$ADDON_NAME" -q && cd -
 CHANGELOG=$(git tag -l -n1000 "v$VERSION" | sed "s/^v$VERSION[[:space:]]*//" || echo "Release v$VERSION")
 
 # Upload
-curl -H "X-Api-Token: $CURSEFORGE_API_KEY" \
+curl -H "X-Api-Token: $CURSEFORGE_API_TOKEN" \
      -F "metadata={\"changelog\":\"$CHANGELOG\",\"changelogType\":\"text\",\"displayName\":\"$ADDON_NAME $VERSION\",\"gameVersions\":[11.0.0],\"releaseType\":\"release\"}" \
      -F "file=@$TEMP_DIR/$ZIP_FILE" \
      "https://minecraft.curseforge.com/api/projects/$PROJECT_ID/upload-file"
