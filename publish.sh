@@ -76,8 +76,8 @@ if [ -z "$CHANGELOG" ]; then
     CHANGELOG=$(git log --pretty=format:"- %s" -n 10)
 fi
 
-# Determine game version - use current retail game version ID
-GAME_VERSION_ID="10984"  # WoW 11.1.7 Retail
+# Use WoW 11.1.7 game version ID (same as GrouperPlus)
+GAME_VERSION_ID="13203"  # WoW 11.1.7 (The War Within)
 
 # Prepare metadata with proper JSON escaping
 CHANGELOG_JSON=$(echo "$CHANGELOG" | jq -Rs .)
