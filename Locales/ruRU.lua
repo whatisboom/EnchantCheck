@@ -1,8 +1,8 @@
 local L = LibStub("AceLocale-3.0"):NewLocale("EnchantCheck", "ruRU")
 if not L then return end
 
-L["Version"] = true
-L["Authors"] = "Autoren"
+L["Version"] = "Версия"
+L["Authors"] = "Авторы"
 
 L["ENABLED"] = "включено."
 L["DISABLED"] = "отключено."
