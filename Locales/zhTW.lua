@@ -1,4 +1,4 @@
-﻿local L = LibStub("AceLocale-3.0"):NewLocale("EnchantCheck", "zhTW", true)
+﻿local L = LibStub("AceLocale-3.0"):NewLocale("EnchantCheck", "zhTW")
 if not L then return end
 
 L["Version"] = true
