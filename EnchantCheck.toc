@@ -2,8 +2,9 @@
 ## Title: EnchantCheck
 ## Version: 11.1.7-1
 ## OptionalDeps: Ace3, AceAddon, AceConsole, AceDB, AceEvent, AceHook, AceLocale, AceTimer, LibStub, CallbackHandler, LibBabble, LibItemUpgradeInfo
-## Interface: 110105
+## Interface: 110200, 110205
 ## Notes: Enchant Check allows you to quick-check your gear or the gear of the player you are currently inspecting.
+## Notes-ruRU: Аддон, с помощью которого можно быстро проверить свое снаряжение на предмет чар и камней или снаряжение игрока, которого Вы в данный момент осматриваете.
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
