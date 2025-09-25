@@ -23,3 +23,5 @@ Thumbs.db
 lib
 pyvenv.cfg
 bin
+
+.claude/
