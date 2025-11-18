@@ -1073,11 +1073,15 @@ function EnchantCheck:CheckPurchaseableUpgrades(items, avgItemLevel, contentType
 	-- Check each upgradeable jewelry slot
 	for _, slot in ipairs(EnchantCheckConstants.SOCKET_UPGRADES.UPGRADEABLE_SLOTS) do
 		local item = items[slot]
-		if item.link and item.sockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY then
-			-- Use same smart notification logic as enchants
-			if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
-				table.insert(upgradeableItems, slot)
-				hasUpgradeableItems = true
+		if item.link then
+			-- Calculate total sockets (filled + empty)
+			local totalSockets = item.gems + item.sockets
+			if totalSockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY then
+				-- Use same smart notification logic as enchants
+				if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
+					table.insert(upgradeableItems, slot)
+					hasUpgradeableItems = true
+				end
 			end
 		end
 	end
