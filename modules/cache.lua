@@ -209,7 +209,13 @@ end
 
 function EnchantCheckCache:SetItemData(itemLink, data)
 	if not itemLink or not data then return end
-	
+
+	-- Validate cache entry before storing
+	if not self:ValidateCacheEntry(itemLink, data) then
+		self:Debug(d_warn, "Invalid cache data for %s", itemLink)
+		return
+	end
+
 	-- Add cache metadata
 	local cacheData = {
 		gems = data.gems,

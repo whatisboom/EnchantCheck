@@ -369,7 +369,10 @@ function EnchantCheck:OnInitialize()
 	
 	-- Initialize weapon configuration
 	CheckOffHand = EnchantCheckConstants.OFFHAND_REQUIRED(LI)
-	
+
+	-- Centralize API selection for consistent usage throughout addon
+	self.GetItemInfoAPI = (C_Item and C_Item.GetItemInfo) and C_Item.GetItemInfo or GetItemInfo
+
 	-- Initialize database
 	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile")
 	
@@ -585,13 +588,8 @@ function EnchantCheck:GetActualItemLevel(link)
 	if success and itemLevel and itemLevel > 0 then
 		return itemLevel
 	else
-		-- Fallback to basic item level using modern API
-		local basicLevel
-		if C_Item and C_Item.GetItemInfo then
-			_, _, _, basicLevel = C_Item.GetItemInfo(link)
-		else
-			_, _, _, basicLevel = GetItemInfo(link)
-		end
+		-- Fallback to basic item level using centralized API
+		local _, _, _, basicLevel = self.GetItemInfoAPI(link)
 		return basicLevel or 0
 	end
 end
@@ -802,7 +800,7 @@ function EnchantCheck:GetGemInfoFromLink(itemLink)
 	for i = 1, 4 do
 		local _, gemLink = GetItemGem(itemLink, i)
 		if gemLink then
-			local gemName = GetItemInfo(gemLink)
+			local gemName = self.GetItemInfoAPI(gemLink)
 			if gemName then
 				table.insert(gems, gemName)
 			end
@@ -1072,13 +1070,8 @@ function EnchantCheck:CheckMissingEnchants(items, avgItemLevel, contentType)
 		if item.link and (item.enchant == 0) then
 			-- Use smart notification system to determine if we should warn
 			if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
-				-- Use modern API with fallback
-				local itemType
-				if C_Item and C_Item.GetItemInfo then
-					itemType = select(6, C_Item.GetItemInfo(item.link))
-				else
-					itemType = select(6, GetItemInfo(item.link))
-				end
+				-- Use centralized API
+				local itemType = select(6, self.GetItemInfoAPI(item.link))
 
 				if not (libItemUpgrade:IsArtifact(item.link) or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
 					table.insert(missingEnchants, slot)
@@ -1218,13 +1211,11 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 	
 	-- Check for missing items
 	if hasMissingItems and self:GetSetting("warnMissingItems") then
-		local s = ""
-		for k, slot in ipairs(missingItems) do
-			s = s .. L["INVSLOT_"..slot]
-			if k < #missingItems then
-				s = s .. ", "
-			end
+		local parts = {}
+		for _, slot in ipairs(missingItems) do
+			table.insert(parts, L["INVSLOT_"..slot])
 		end
+		local s = table.concat(parts, ", ")
 		local missingItemsMsg = L["MISSING_ITEMS"] .. " " .. s
 		local formattedMsg = self:FormatMessage(missingItemsMsg, EnchantCheckConstants.UI.SEVERITY.ERROR)
 		table.insert(report, formattedMsg)
@@ -1236,13 +1227,11 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 	
 	-- Check for missing gems
 	if hasMissingGems and self:GetSetting("warnMissingGems") then
-		local s = ""
-		for k, slot in ipairs(missingGems) do
-			s = s .. L["INVSLOT_"..slot]
-			if k < #missingGems then
-				s = s .. ", "
-			end
+		local parts = {}
+		for _, slot in ipairs(missingGems) do
+			table.insert(parts, L["INVSLOT_"..slot])
 		end
+		local s = table.concat(parts, ", ")
 		local missingGemsMsg = L["MISSING_GEMS"] .. " " .. s
 		local formattedMsg = self:FormatMessage(missingGemsMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
 		table.insert(report, formattedMsg)
@@ -1258,13 +1247,11 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 	
 	-- Check for missing enchants
 	if hasMissingEnchants and self:GetSetting("warnMissingEnchants") then
-		local s = ""
-		for k, slot in ipairs(missingEnchants) do
-			s = s .. L["INVSLOT_"..slot]
-			if k < #missingEnchants then
-				s = s .. ", "
-			end
+		local parts = {}
+		for _, slot in ipairs(missingEnchants) do
+			table.insert(parts, L["INVSLOT_"..slot])
 		end
+		local s = table.concat(parts, ", ")
 		local missingEnchantsMsg = L["MISSING_ENCHANTS"] .. " " .. s
 		local formattedMsg = self:FormatMessage(missingEnchantsMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
 		table.insert(report, formattedMsg)
@@ -1310,11 +1297,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	-- Initialize parameters
 	if not items then items = {} end
 	if not iter then iter = 0 end
-	
-	-- Clear previous scan data to free memory
-	if iter == 0 then
-		collectgarbage("collect")
-	end
 	
 	-- Set up head enchant check for Dragonflight
 	if not isInspect and EnchantCheckConstants and EnchantCheckConstants.QUEST_IDS and EnchantCheckConstants.EXPANSIONS then
@@ -1469,8 +1451,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	report = nil
 	warnings = nil
 	lowLevelItems = nil
-	collectgarbage("step", 100) -- Incremental garbage collection
-	
+
 	self.scanInProgress = nil
 end
 

@@ -184,9 +184,9 @@ end
 -- Performance Utilities
 ----------------------------------------------
 
--- Memory cleanup helper
+-- Memory cleanup helper (deprecated - WoW's GC is already optimized)
 function EnchantCheckUtils:CleanupMemory()
-	collectgarbage("collect")
+	-- No-op: Manual GC calls can cause stuttering
 end
 
 -- Performance timing helper
