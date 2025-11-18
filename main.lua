@@ -71,6 +71,10 @@ function EnchantCheck:ToggleSetting(key)
 	end
 end
 
+function EnchantCheck:IsValidSlot(slot)
+	return type(slot) == "number" and slot >= 1 and slot <= EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL
+end
+
 ----------------------------------------------
 -- Console Commands
 ----------------------------------------------
@@ -502,6 +506,9 @@ function EnchantCheck:SetupTooltipHooks()
 	else
 		self:Debug(d_warn, "Failed to hook any tooltips - enhanced tooltips may not work")
 		self.tooltipsHooked = false
+		-- Show one-time warning to user and disable tooltip feature
+		self:Printf("|cffFFFF00Warning:|r Enhanced tooltips unavailable. Disabling feature. Please report this issue if it persists.")
+		self.db.profile.showTooltips = false
 	end
 	
 	self.needsTooltipHooking = false
@@ -1297,15 +1304,27 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	-- Initialize parameters
 	if not items then items = {} end
 	if not iter then iter = 0 end
-	
+
+	-- Check for scan timeout (prevent forever-locked scans)
+	if self.scanInProgress then
+		local scanAge = GetTime() - self.scanInProgress
+		if scanAge < 10 then -- 10 second timeout
+			self:Debug(d_warn, "Scan already in progress (%.1fs old)", scanAge)
+			return
+		else
+			self:Debug(d_warn, "Previous scan timed out (%.1fs), forcing new scan", scanAge)
+			self.scanInProgress = nil
+		end
+	end
+
 	-- Set up head enchant check for Dragonflight
 	if not isInspect and EnchantCheckConstants and EnchantCheckConstants.QUEST_IDS and EnchantCheckConstants.EXPANSIONS then
 		if C_QuestLog.IsQuestFlaggedCompleted(EnchantCheckConstants.QUEST_IDS.HEAD_ENCHANT_UNLOCK) and GetExpansionLevel() == EnchantCheckConstants.EXPANSIONS.DRAGONFLIGHT then
 			CheckSlotEnchant[1] = true -- HEAD
 		end
 	end
-	
-	self.scanInProgress = true
+
+	self.scanInProgress = GetTime()
 	libItemUpgrade:CleanCache()
 	
 	-- Batch process items for better performance
@@ -1512,13 +1531,30 @@ end
 -- ClearCheckFrame(frame)
 ----------------------------------------------
 function EnchantCheck:ClearCheckFrame(frame)
-	-- clean up
-	frame.titleFont:SetTextColor(1, 1, 0)
-	frame.titleInfoFont:SetText("")
-	frame.readyTex:Hide()
-	frame.notReadyTex:Hide()
-	frame.waitingTex:Show()
-	frame.messages:Clear()
+	if not frame then
+		self:Debug(d_warn, "ClearCheckFrame called with nil frame")
+		return
+	end
+
+	-- Clean up with nil checks
+	if frame.titleFont then
+		frame.titleFont:SetTextColor(1, 1, 0)
+	end
+	if frame.titleInfoFont then
+		frame.titleInfoFont:SetText("")
+	end
+	if frame.readyTex then
+		frame.readyTex:Hide()
+	end
+	if frame.notReadyTex then
+		frame.notReadyTex:Hide()
+	end
+	if frame.waitingTex then
+		frame.waitingTex:Show()
+	end
+	if frame.messages then
+		frame.messages:Clear()
+	end
 end
 
 ----------------------------------------------

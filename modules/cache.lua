@@ -293,7 +293,10 @@ end
 
 function EnchantCheckCache:StopMaintenanceTimer()
 	if maintenanceTimer then
-		maintenanceTimer:Cancel()
+		-- Validate timer exists and has Cancel method
+		if type(maintenanceTimer.Cancel) == "function" then
+			maintenanceTimer:Cancel()
+		end
 		maintenanceTimer = nil
 	end
 end
