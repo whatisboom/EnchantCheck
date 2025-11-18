@@ -168,9 +168,12 @@ function ScanCache:SetSlotData(slot, data)
 end
 
 function ScanCache:EndScan()
+	-- Explicitly nil out entries to prevent memory leak
+	for k in pairs(self.data) do
+		self.data[k] = nil
+	end
 	self.scanId = nil
 	self.unit = nil
-	self.data = {}
 end
 
 function ScanCache:IsActive()

@@ -968,8 +968,8 @@ function EnchantCheck:ProcessItemData(item, slot, itemLink, itemName, itemRarity
 		
 		-- Still need to check two-handed status for this slot
 		local twoHanded = false
-		if slot == 16 and itemSubType and CheckOffHand then -- MAINHAND
-			twoHanded = not CheckOffHand[itemSubType]
+		if slot == EnchantCheckConstants.SLOT_IDS.MAINHAND and itemSubType and CheckOffHand then
+			twoHanded = CheckOffHand[itemSubType] == false -- Explicit false check
 		end
 		return twoHanded
 	end
@@ -1040,8 +1040,8 @@ function EnchantCheck:ProcessItemData(item, slot, itemLink, itemName, itemRarity
 	
 	-- Check if two-handed weapon
 	local twoHanded = false
-	if slot == INVSLOT_MAINHAND and itemSubType and CheckOffHand then
-		twoHanded = not CheckOffHand[itemSubType]
+	if slot == EnchantCheckConstants.SLOT_IDS.MAINHAND and itemSubType and CheckOffHand then
+		twoHanded = CheckOffHand[itemSubType] == false -- Explicit false check
 	end
 	
 	return twoHanded
@@ -1053,7 +1053,7 @@ function EnchantCheck:CheckMissingItems(items, twoHanded)
 	
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		if not items[slot].link and not items[slot].id then
-			if CheckSlotMissing[slot] and ((slot ~= 17) or not twoHanded) then -- 17 = OFFHAND
+			if CheckSlotMissing[slot] and ((slot ~= EnchantCheckConstants.SLOT_IDS.OFFHAND) or not twoHanded) then
 				table.insert(missingItems, slot)
 				hasMissingItems = true
 			end
@@ -1079,8 +1079,8 @@ function EnchantCheck:CheckMissingEnchants(items, avgItemLevel, contentType)
 				else
 					itemType = select(6, GetItemInfo(item.link))
 				end
-				
-				if not (libItemUpgrade:IsArtifact(item.link) or (slot == 17 and itemType ~= WEAPON)) then -- 17 = OFFHAND
+
+				if not (libItemUpgrade:IsArtifact(item.link) or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
 					table.insert(missingEnchants, slot)
 					hasMissingEnchants = true
 				end
@@ -1114,7 +1114,7 @@ function EnchantCheck:CalculateItemLevels(items, twoHanded)
 	
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = items[slot]
-		if item.link and (slot ~= 4) and (slot ~= 19) and item.level and item.level > 0 then -- 4 = BODY, 19 = TABARD
+		if item.link and (slot ~= EnchantCheckConstants.SLOT_IDS.BODY) and (slot ~= EnchantCheckConstants.SLOT_IDS.TABARD) and item.level and item.level > 0 then
 			if item.level < itemLevelMin or itemLevelMin == 0 then
 				itemLevelMin = item.level
 			end
@@ -1146,7 +1146,7 @@ function EnchantCheck:CalculateItemLevels(items, twoHanded)
 		local item = items[slot]
 		if item.link and item.level and item.level > 0 then
 			local shouldWarn = (item.level < avgItemLevel * EnchantCheckConstants.ITEM_LEVEL.LOW_THRESHOLD_MULTIPLIER) and
-				(slot ~= 4) and (slot ~= 19) -- 4 = BODY, 19 = TABARD
+				(slot ~= EnchantCheckConstants.SLOT_IDS.BODY) and (slot ~= EnchantCheckConstants.SLOT_IDS.TABARD)
 			
 			-- Check heirloom setting
 			if self:GetSetting("ignoreHeirlooms") and item.rarity == EnchantCheckConstants.ITEM_LEVEL.HEIRLOOM_RARITY then
@@ -1520,6 +1520,7 @@ function EnchantCheck:CheckInspected()
 			self:Debug(d_info, "|cff00FF00" .. L["SCAN"] .. "|cffFFFFFF")
 			NotifyInspect(InspectFrame.unit)
 			self.pendingInspection = true
+			self.pendingInspectionGUID = UnitGUID(InspectFrame.unit)
 		end
 	else
 		self:Debug(d_warn, "No inspected unit found!")
@@ -1581,11 +1582,12 @@ function EnchantCheck:INSPECT_READY(event, guid)
 
 	--self:Debug(d_notice, "INSPECT_READY")
 
-	if self.pendingInspection and (UnitGUID(InspectFrame.unit) == guid) then
+	if self.pendingInspection and self.pendingInspectionGUID == guid then
 		if EnchantCheckFrame:IsShown() then
 			self:CheckGear(InspectFrame.unit)
 		end
 		self.pendingInspection = nil
+		self.pendingInspectionGUID = nil
 	end
 end
 

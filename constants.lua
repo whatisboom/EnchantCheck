@@ -18,6 +18,33 @@ EnchantCheckConstants.AUTHORS = "whatisboom"
 EnchantCheckConstants.MAX_LEVEL = 80 -- Current max level for automated self-checks
 
 ----------------------------------------------
+-- Slot ID Constants
+-- Numeric slot indices matching WoW's INVSLOT_* globals
+-- Used throughout the addon for consistent slot referencing
+----------------------------------------------
+EnchantCheckConstants.SLOT_IDS = {
+	HEAD = 1,
+	NECK = 2,
+	SHOULDER = 3,
+	BODY = 4,        -- Shirt
+	CHEST = 5,
+	WAIST = 6,
+	LEGS = 7,
+	FEET = 8,
+	WRIST = 9,
+	HAND = 10,
+	FINGER1 = 11,
+	FINGER2 = 12,
+	TRINKET1 = 13,
+	TRINKET2 = 14,
+	BACK = 15,
+	MAINHAND = 16,
+	OFFHAND = 17,
+	RANGED = 18,     -- Unused in modern WoW
+	TABARD = 19,
+}
+
+----------------------------------------------
 -- Class Colors
 ----------------------------------------------
 EnchantCheckConstants.CLASS_COLORS = {
