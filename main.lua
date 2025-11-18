@@ -1246,8 +1246,11 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 		-- Apply yellow color directly for visibility
 		local upgradeableMsg = EnchantCheckConstants.UI.COLORS.WARNING .. "- " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s .. EnchantCheckConstants.UI.COLORS.RESET
 		table.insert(report, upgradeableMsg)
-		-- Note: Don't add to warnings array (no chat spam) and don't set gems_state to false
 		EnchantCheckGemsFrame.messages:AddMessage(upgradeableMsg)
+		-- Set gems frame to warning state (yellow) if not already failed
+		if gems_state then
+			gems_state = "warning"
+		end
 	end
 	
 	-- Check for missing enchants
