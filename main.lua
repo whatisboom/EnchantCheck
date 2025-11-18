@@ -1079,7 +1079,8 @@ function EnchantCheck:CheckPurchaseableUpgrades(items, avgItemLevel, contentType
 			if totalSockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY then
 				-- Use same smart notification logic as enchants
 				if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
-					table.insert(upgradeableItems, slot)
+					local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY - totalSockets
+					table.insert(upgradeableItems, {slot = slot, count = socketsNeeded})
 					hasUpgradeableItems = true
 				end
 			end
@@ -1239,11 +1240,8 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 	-- Check for purchaseable socket upgrades (soft warning)
 	if hasUpgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
 		local parts = {}
-		for _, slot in ipairs(upgradeableItems) do
-			local item = items[slot]
-			local totalSockets = item.gems + item.sockets
-			local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY - totalSockets
-			table.insert(parts, L["INVSLOT_"..slot] .. " (" .. socketsNeeded .. ")")
+		for _, itemData in ipairs(upgradeableItems) do
+			table.insert(parts, L["INVSLOT_"..itemData.slot] .. " (" .. itemData.count .. ")")
 		end
 		local s = table.concat(parts, ", ")
 		-- Apply yellow color directly for visibility
