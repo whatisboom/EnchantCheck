@@ -110,8 +110,6 @@ function EnchantCheck:ChatCommand(msg)
 		self:CheckCharacter()
 	elseif args[1] == "cache" then
 		self:ShowCacheStats()
-	elseif args[1] == "fixhead" then
-		self:ForceHeadSlotCheck()
 	else
 		self:Printf("|cffFFFF00Unknown command:|r '%s'. Type |cff00FF00/enchantcheck help|r for available commands.", args[1] or "")
 	end
@@ -126,50 +124,7 @@ function EnchantCheck:ShowHelp()
 	self:Printf("  |cffFFFF00/enchantcheck toggle <setting>|cffFFFFFF - Toggle a boolean setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck reset|cffFFFFFF - Reset all settings to defaults")
 	self:Printf("  |cffFFFF00/enchantcheck cache|cffFFFFFF - Show cache statistics")
-	self:Printf("  |cffFFFF00/enchantcheck fixhead|cffFFFFFF - Force re-check head enchant requirements")
 	self:Printf("  |cff888888Examples: smartNotifications, showTooltips, minItemLevelForWarnings|cffFFFFFF")
-end
-
-----------------------------------------------
--- Force Head Slot Check Function
-----------------------------------------------
-function EnchantCheck:ForceHeadSlotCheck()
-	self:Print("=== Force Head Slot Re-evaluation ===")
-	
-	-- Direct function definition (bypass caching issues)
-	local headEnchantFunction = function()
-		self:Print("Running head enchant check function...")
-		
-		-- Head enchants are only required during The War Within Season 2 (Season 14)
-		-- Add safety checks to prevent errors
-		if not C_MythicPlus then
-			self:Print("  C_MythicPlus not available")
-			return false
-		end
-		
-		if not C_MythicPlus.GetCurrentSeason then
-			self:Print("  C_MythicPlus.GetCurrentSeason not available")
-			return false
-		end
-		
-		local success, season = pcall(C_MythicPlus.GetCurrentSeason)
-		if not success then
-			self:Print("  Failed to get current season: " .. tostring(season))
-			return false
-		end
-		
-		self:Print("  Current Mythic+ Season: " .. tostring(season))
-		local result = season == 14
-		self:Print("  Head enchants required: " .. tostring(result))
-		return result
-	end
-	
-	-- Execute the function and update CheckSlotEnchant
-	local result = headEnchantFunction()
-	CheckSlotEnchant[1] = result
-
-	self:Print("CheckSlotEnchant[1] set to: " .. tostring(result))
-	self:Print("Head slot check complete. Run '/enchantcheck debug' to verify.")
 end
 
 ----------------------------------------------
@@ -284,18 +239,6 @@ function EnchantCheck:InitializeSlotConfigurations()
 	
 	-- Get required slots from constants
 	CheckSlotMissing = EnchantCheckConstants.REQUIRED_SLOTS
-	
-	-- Handle head enchant dynamic requirement (Season 14 only)
-	if CheckSlotEnchant[1] == false then
-		local headEnchantRequired = false
-		if C_MythicPlus and C_MythicPlus.GetCurrentSeason then
-			local success, season = pcall(C_MythicPlus.GetCurrentSeason)
-			if success and season == 14 then
-				headEnchantRequired = true
-			end
-		end
-		CheckSlotEnchant[1] = headEnchantRequired
-	end
 end
 
 ----------------------------------------------
@@ -1326,13 +1269,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		else
 			self:Debug(d_warn, "Previous scan timed out (%.1fs), forcing new scan", scanAge)
 			self.scanInProgress = nil
-		end
-	end
-
-	-- Set up head enchant check for Dragonflight
-	if not isInspect and EnchantCheckConstants and EnchantCheckConstants.QUEST_IDS and EnchantCheckConstants.EXPANSIONS then
-		if C_QuestLog.IsQuestFlaggedCompleted(EnchantCheckConstants.QUEST_IDS.HEAD_ENCHANT_UNLOCK) and GetExpansionLevel() == EnchantCheckConstants.EXPANSIONS.DRAGONFLIGHT then
-			CheckSlotEnchant[1] = true -- HEAD
 		end
 	end
 

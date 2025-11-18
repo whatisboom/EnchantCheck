@@ -68,7 +68,7 @@ EnchantCheckConstants.CLASS_COLORS = {
 -- Using numeric indices to avoid dependency on WoW globals at load time
 ----------------------------------------------
 EnchantCheckConstants.ENCHANT_SLOTS = {
-	[1] = false,  -- HEAD (handled dynamically in main.lua initialization)
+	[1] = false,  -- HEAD (head enchants not required in current content)
 	[2] = false,   -- NECK
 	[3] = false,   -- SHOULDER
 	[4] = false,   -- BODY (shirt)
@@ -218,13 +218,6 @@ EnchantCheckConstants.PRIMARY_STATS = {
 EnchantCheckConstants.ITEM_LEVEL = {
 	LOW_THRESHOLD_MULTIPLIER = 0.8, -- Items below 80% of average are flagged as low
 	HEIRLOOM_RARITY = 7, -- Heirloom items (exempt from low level warnings)
-}
-
-----------------------------------------------
--- Quest IDs for Feature Unlocks
-----------------------------------------------
-EnchantCheckConstants.QUEST_IDS = {
-	HEAD_ENCHANT_UNLOCK = 78429, -- Quest that unlocks head enchants
 }
 
 ----------------------------------------------
