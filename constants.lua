@@ -206,6 +206,15 @@ EnchantCheckConstants.PRIMARY_STATS = {
 ----------------------------------------------
 -- Item Level Thresholds
 ----------------------------------------------
+-- Item rarity values:
+-- 0 = Poor (gray)
+-- 1 = Common (white)
+-- 2 = Uncommon (green)
+-- 3 = Rare (blue)
+-- 4 = Epic (purple)
+-- 5 = Legendary (orange)
+-- 6 = Artifact (gold)
+-- 7 = Heirloom (yellow-gold)
 EnchantCheckConstants.ITEM_LEVEL = {
 	LOW_THRESHOLD_MULTIPLIER = 0.8, -- Items below 80% of average are flagged as low
 	HEIRLOOM_RARITY = 7, -- Heirloom items (exempt from low level warnings)
@@ -351,11 +360,17 @@ EnchantCheckConstants.CONTENT_TYPES = {
 }
 
 
--- Content-based item level requirements  
+-- Content-based item level requirements (as of patch 11.2.7)
+-- These thresholds determine when enchant/gem warnings are shown based on content type
+-- LEVELING: 0 (relaxed - no ilvl requirement, suppress most warnings)
+-- DUNGEON: 450 (Heroic dungeon baseline)
+-- MYTHIC_PLUS: 480 (M+0 to M+10 range)
+-- RAID: 500 (Normal raid entry level)
+-- PVP: 460 (Conquest gear baseline)
 EnchantCheckConstants.CONTENT_ILVL_REQUIREMENTS = {
 	[EnchantCheckConstants.CONTENT_TYPES.LEVELING] = 0,
 	[EnchantCheckConstants.CONTENT_TYPES.DUNGEON] = 450,
-	[EnchantCheckConstants.CONTENT_TYPES.MYTHIC_PLUS] = 480, 
+	[EnchantCheckConstants.CONTENT_TYPES.MYTHIC_PLUS] = 480,
 	[EnchantCheckConstants.CONTENT_TYPES.RAID] = 500,
 	[EnchantCheckConstants.CONTENT_TYPES.PVP] = 460,
 	[EnchantCheckConstants.CONTENT_TYPES.ENDGAME] = 480
