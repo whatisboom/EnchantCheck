@@ -1049,7 +1049,7 @@ end
 function EnchantCheck:CheckMissingGems(items)
 	local missingGems = {}
 	local hasMissingGems = false
-	
+
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = items[slot]
 		if item.link and item.gems < item.sockets then
@@ -1057,8 +1057,32 @@ function EnchantCheck:CheckMissingGems(items)
 			hasMissingGems = true
 		end
 	end
-	
+
 	return missingGems, hasMissingGems
+end
+
+function EnchantCheck:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
+	local upgradeableItems = {}
+	local hasUpgradeableItems = false
+
+	-- Only check if setting is enabled
+	if not self:GetSetting("warnPurchaseableUpgrades") then
+		return upgradeableItems, hasUpgradeableItems
+	end
+
+	-- Check each upgradeable jewelry slot
+	for _, slot in ipairs(EnchantCheckConstants.SOCKET_UPGRADES.UPGRADEABLE_SLOTS) do
+		local item = items[slot]
+		if item.link and item.sockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY then
+			-- Use same smart notification logic as enchants
+			if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
+				table.insert(upgradeableItems, slot)
+				hasUpgradeableItems = true
+			end
+		end
+	end
+
+	return upgradeableItems, hasUpgradeableItems
 end
 
 function EnchantCheck:CalculateItemLevels(items, twoHanded)
@@ -1117,7 +1141,7 @@ function EnchantCheck:CalculateItemLevels(items, twoHanded)
 	return avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems
 end
 
-function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems, missingItems, hasMissingItems, missingGems, hasMissingGems, missingEnchants, hasMissingEnchants, contentType)
+function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems, missingItems, hasMissingItems, missingGems, hasMissingGems, missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems, contentType)
 	local report = {}
 	local warnings = {}
 	local items_state = true
@@ -1205,6 +1229,20 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 		local properGemsMsg = self:FormatMessage(L["PROPER_GEMS"], EnchantCheckConstants.UI.SEVERITY.GOOD)
 		table.insert(report, properGemsMsg)
 		EnchantCheckGemsFrame.messages:AddMessage(properGemsMsg)
+	end
+
+	-- Check for purchaseable socket upgrades (soft warning)
+	if hasUpgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
+		local parts = {}
+		for _, slot in ipairs(upgradeableItems) do
+			table.insert(parts, L["INVSLOT_"..slot])
+		end
+		local s = table.concat(parts, ", ")
+		local upgradeableMsg = "◇ " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s
+		local formattedMsg = self:FormatMessage(upgradeableMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
+		table.insert(report, formattedMsg)
+		-- Note: Don't add to warnings array (no chat spam) and don't set gems_state to false
+		EnchantCheckGemsFrame.messages:AddMessage(formattedMsg)
 	end
 	
 	-- Check for missing enchants
@@ -1394,12 +1432,14 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local missingItems, hasMissingItems = self:CheckMissingItems(items, twoHanded)
 	local missingEnchants, hasMissingEnchants = self:CheckMissingEnchants(items, avgItemLevel, contentType)
 	local missingGems, hasMissingGems = self:CheckMissingGems(items)
-	
+	local upgradeableItems, hasUpgradeableItems = self:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
+
 	-- Generate enhanced report with context
 	local report, warnings, items_state, gems_state, enchants_state = self:GenerateReport(
 		unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems,
-		missingItems, hasMissingItems, missingGems, hasMissingGems, 
-		missingEnchants, hasMissingEnchants, contentType
+		missingItems, hasMissingItems, missingGems, hasMissingGems,
+		missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems,
+		contentType
 	)
 	
 	-- Set UI frame states

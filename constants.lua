@@ -170,6 +170,7 @@ EnchantCheckConstants.DEFAULTS = {
 		warnMissingEnchants = true,
 		warnMissingGems = true,
 		warnLowItemLevel = true,
+		warnPurchaseableUpgrades = true,
 		
 		-- Sound Settings
 		enableSounds = false,
@@ -218,6 +219,14 @@ EnchantCheckConstants.PRIMARY_STATS = {
 EnchantCheckConstants.ITEM_LEVEL = {
 	LOW_THRESHOLD_MULTIPLIER = 0.8, -- Items below 80% of average are flagged as low
 	HEIRLOOM_RARITY = 7, -- Heirloom items (exempt from low level warnings)
+}
+
+----------------------------------------------
+-- Socket Upgrade Configuration
+----------------------------------------------
+EnchantCheckConstants.SOCKET_UPGRADES = {
+	MAX_SOCKETS_PER_JEWELRY = 2, -- Neck and rings can have up to 2 sockets via jewelcrafter
+	UPGRADEABLE_SLOTS = {2, 11, 12}, -- NECK, FINGER1, FINGER2
 }
 
 ----------------------------------------------
