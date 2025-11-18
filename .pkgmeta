@@ -28,7 +28,7 @@ externals:
   Libs/LibBabble-Inventory-3.0:
     url: https://repos.wowace.com/wow/libbabble-inventory-3-0/trunk
   Libs/LibItemUpgradeInfo-1.0:
-    url: https://github.com/phanx-wow/LibItemUpgradeInfo
+    url: git://github.com/phanx-wow/LibItemUpgradeInfo.git
 
 embedded-libraries:
   - LibStub
