@@ -52,10 +52,22 @@ function EnchantCheck:GetSetting(key)
 		self:Debug(d_warn, "GetSetting called but db.profile is nil")
 		return nil
 	end
+	if type(key) ~= "string" then
+		self:Debug(d_warn, "GetSetting requires string key, got %s", type(key))
+		return nil
+	end
 	return self.db.profile[key]
 end
 
 function EnchantCheck:SetSetting(key, value)
+	if not self.db or not self.db.profile then
+		self:Debug(d_warn, "SetSetting called before db initialized")
+		return
+	end
+	if type(key) ~= "string" then
+		self:Debug(d_warn, "SetSetting requires string key, got %s", type(key))
+		return
+	end
 	self.db.profile[key] = value
 	self:OnConfigUpdate()
 end
@@ -101,7 +113,7 @@ function EnchantCheck:ChatCommand(msg)
 	elseif args[1] == "fixhead" then
 		self:ForceHeadSlotCheck()
 	else
-		self:Printf("Unknown command. Type '/enchantcheck help' for available commands.")
+		self:Printf("|cffFFFF00Unknown command:|r '%s'. Type |cff00FF00/enchantcheck help|r for available commands.", args[1] or "")
 	end
 end
 
@@ -605,19 +617,19 @@ function EnchantCheck:GetItemLinkInfo(link)
 	if not link or type(link) ~= "string" or link == "" then
 		return nil, nil, nil
 	end
-	
-	-- Validate item link format
+
+	-- Delegate to utility function with debug logging
 	if not link:match("|Hitem:") then
 		self:Debug(d_warn, "Invalid item link format: %s", tostring(link))
 		return nil, nil, nil
 	end
-	
-	-- Try multiple patterns for different item link formats
+
+	-- Use centralized implementation from utils
 	local itemColor, itemString, itemName
-	
+
 	-- Pattern 1: Full item link with color
 	itemColor, itemString, itemName = link:match("(|c%x+)|Hitem:([-%d:]*)|h%[(.-)%]|h|r")
-	
+
 	if not itemString then
 		-- Pattern 2: Item link without color but with name
 		itemString, itemName = link:match("|Hitem:([-%d:]*)|h%[(.-)%]|h")
@@ -625,7 +637,7 @@ function EnchantCheck:GetItemLinkInfo(link)
 			itemColor = "|cffffffff"
 		end
 	end
-	
+
 	if not itemString then
 		-- Pattern 3: Item link without name (truncated)
 		itemString = link:match("|Hitem:([-%d:]*)")

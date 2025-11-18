@@ -30,15 +30,24 @@ function ItemCache:Get(key)
 	if self.data[key] and timestamp and (now - timestamp) < self.ttl then
 		self.accessCount[key] = (self.accessCount[key] or 0) + 1
 		self.hits = self.hits + 1
+		if EnchantCheck and EnchantCheck.Debug then
+			EnchantCheck:Debug(d_info, "Cache HIT: %s", key)
+		end
 		return self.data[key]
 	end
-	
+
 	-- Clean up expired entry
 	if self.data[key] then
 		self:Remove(key)
+		if EnchantCheck and EnchantCheck.Debug then
+			EnchantCheck:Debug(d_info, "Cache EXPIRED: %s", key)
+		end
 	end
-	
+
 	self.misses = self.misses + 1
+	if EnchantCheck and EnchantCheck.Debug then
+		EnchantCheck:Debug(d_info, "Cache MISS: %s", key)
+	end
 	return nil
 end
 
@@ -47,13 +56,20 @@ function ItemCache:Set(key, value)
 	
 	-- Ensure we don't exceed max size
 	if self:Size() >= self.maxSize then
+		if EnchantCheck and EnchantCheck.Debug then
+			EnchantCheck:Debug(d_info, "Cache full (%d/%d), cleaning up", self:Size(), self.maxSize)
+		end
 		self:Cleanup()
 	end
-	
+
 	local now = GetTime()
 	self.data[key] = value
 	self.timestamps[key] = now
 	self.accessCount[key] = 1
+
+	if EnchantCheck and EnchantCheck.Debug then
+		EnchantCheck:Debug(d_info, "Cache SET: %s", key)
+	end
 end
 
 function ItemCache:Remove(key)
