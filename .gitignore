@@ -5,6 +5,7 @@
 *.zip
 dist
 EnchantCheck-*.zip
+.release/
 
 # OS generated files
 .DS_Store

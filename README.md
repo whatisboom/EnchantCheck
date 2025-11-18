@@ -8,7 +8,7 @@ Never enter a raid with missing enchants again! EnchantCheck is a World of Warcr
 - **Smart Notifications**: Get warnings based on your content type - no spam while leveling, strict checks for raids
 - **Visual Overlay**: Clear, easy-to-read overlay shows exactly what needs fixing
 - **Works on Inspect**: Check other players' gear optimization before inviting them to groups
-- **Minimap Integration**: Quick access button with color-coded status indicator
+- **Character Frame Integration**: Convenient "Check" button right on your character sheet
 
 ## Features
 
@@ -29,6 +29,7 @@ Automatically adjusts warnings based on what you're doing:
 
 ### 💡 Quality of Life
 - **Enhanced Tooltips**: See enchant/gem status directly on item tooltips
+- **Character & Inspect Buttons**: Quick access from character and inspect frames
 - **Context-Aware**: Head enchants only required during specific seasons
 - **Performance Optimized**: Smart caching system prevents lag
 - **Multi-Language**: Supports English, German, Russian, Chinese (Simplified & Traditional)
@@ -49,13 +50,14 @@ Automatically adjusts warnings based on what you're doing:
 
 ## Configuration
 
-Access settings through the minimap button right-click menu or `/ec config`:
+Configure via slash commands (`/ec config`):
 
 - **Smart Notifications**: Enable/disable content-aware warnings
 - **Item Level Threshold**: Set minimum item level for warnings (default: 400)
 - **Ignore Heirlooms**: Skip heirloom items during checks
 - **Suppress Leveling Warnings**: Reduce notifications while leveling
 - **Enhanced Tooltips**: Show enchant/gem info on item tooltips
+- **Enhanced Dungeon Checks**: Stricter requirements for dungeon content
 
 ## Screenshots
 

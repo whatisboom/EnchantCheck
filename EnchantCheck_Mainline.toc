@@ -1,10 +1,12 @@
 ## Author: whatisboom
 ## Title: EnchantCheck
-## Version: 11.2.0-1
+## Version: @project-version@
 ## OptionalDeps: Ace3, AceAddon, AceConsole, AceDB, AceEvent, AceHook, AceLocale, AceTimer, LibStub, CallbackHandler, LibBabble, LibItemUpgradeInfo
-## Interface: 110205
+## Interface: 110207
 ## Notes: Enchant Check allows you to quick-check your gear or the gear of the player you are currently inspecting.
 ## Notes-ruRU: Аддон, с помощью которого можно быстро проверить свое снаряжение на наличие чар и камней или снаряжение игрока, которого Вы в данный момент осматриваете.
+
+## X-Curse-Project-ID: 461349
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -15,7 +17,6 @@ Libs\AceDB-3.0\AceDB-3.0.xml
 Libs\AceLocale-3.0\AceLocale-3.0.xml
 Libs\AceConsole-3.0\AceConsole-3.0.xml
 Libs\AceTimer-3.0\AceTimer-3.0.xml
-Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 Libs\LibBabble-Inventory-3.0\lib.xml
 Libs\LibItemUpgradeInfo-1.0\Core.lua
 ## embeds.xml

@@ -9,7 +9,7 @@ _G.EnchantCheckConstants = EnchantCheckConstants
 ----------------------------------------------
 -- Version and Info
 ----------------------------------------------
-EnchantCheckConstants.VERSION = "v11.2.0-1"
+EnchantCheckConstants.VERSION = "@project-version@"
 EnchantCheckConstants.AUTHORS = "whatisboom"
 
 ----------------------------------------------
@@ -146,30 +146,18 @@ EnchantCheckConstants.DEFAULTS = {
 		
 		-- Sound Settings
 		enableSounds = false,
-		soundChannel = "Master",
-		
+
 		-- Visual Settings
-		showProgressBar = false,
-		colorCodeSeverity = true,
-		showSlotIcons = true,
 		showTooltips = true,
-		
+
 		-- Content-Specific Settings
 		suppressLevelingWarnings = true,
 		enhancedDungeonChecks = true,
-		raidReadyMode = false,
-		
+
 		-- Performance Settings
 		enableCaching = true,
 		cacheSize = 500, -- Maximum number of cached items
 		cacheTTL = 300, -- Cache time-to-live in seconds (5 minutes)
-		batchProcessing = true,
-		
-		-- Minimap Button Settings
-		minimap = {
-			hide = false,
-		},
-		showMinimapButton = true,
 	},
 }
 
