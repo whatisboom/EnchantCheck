@@ -1240,7 +1240,10 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 	if hasUpgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
 		local parts = {}
 		for _, slot in ipairs(upgradeableItems) do
-			table.insert(parts, L["INVSLOT_"..slot])
+			local item = items[slot]
+			local totalSockets = item.gems + item.sockets
+			local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY - totalSockets
+			table.insert(parts, L["INVSLOT_"..slot] .. " (" .. socketsNeeded .. ")")
 		end
 		local s = table.concat(parts, ", ")
 		-- Apply yellow color directly for visibility
