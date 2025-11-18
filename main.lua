@@ -1242,7 +1242,7 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		local s = table.concat(parts, ", ")
-		local upgradeableMsg = "◇ " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s
+		local upgradeableMsg = "- " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s
 		local formattedMsg = self:FormatMessage(upgradeableMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
 		table.insert(report, formattedMsg)
 		-- Note: Don't add to warnings array (no chat spam) and don't set gems_state to false
