@@ -1243,11 +1243,11 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		local s = table.concat(parts, ", ")
-		local upgradeableMsg = "- " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s
-		local formattedMsg = self:FormatMessage(upgradeableMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
-		table.insert(report, formattedMsg)
+		-- Apply yellow color directly for visibility
+		local upgradeableMsg = EnchantCheckConstants.UI.COLORS.WARNING .. "- " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s .. EnchantCheckConstants.UI.COLORS.RESET
+		table.insert(report, upgradeableMsg)
 		-- Note: Don't add to warnings array (no chat spam) and don't set gems_state to false
-		EnchantCheckGemsFrame.messages:AddMessage(formattedMsg)
+		EnchantCheckGemsFrame.messages:AddMessage(upgradeableMsg)
 	end
 	
 	-- Check for missing enchants
