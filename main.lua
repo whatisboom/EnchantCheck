@@ -1229,7 +1229,8 @@ function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevel
 		EnchantCheckGemsFrame.messages:AddMessage(formattedMsg)
 		gems_state = false
 		hasAnyIssues = true
-	else
+	elseif not hasUpgradeableItems then
+		-- Only show "all sockets have gems" if there are no upgradeable items
 		local properGemsMsg = self:FormatMessage(L["PROPER_GEMS"], EnchantCheckConstants.UI.SEVERITY.GOOD)
 		table.insert(report, properGemsMsg)
 		EnchantCheckGemsFrame.messages:AddMessage(properGemsMsg)
