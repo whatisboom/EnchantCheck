@@ -15,7 +15,7 @@ EnchantCheckConstants.AUTHORS = "whatisboom"
 ----------------------------------------------
 -- Level Constants
 ----------------------------------------------
-EnchantCheckConstants.MAX_LEVEL = 80 -- Current max level for automated self-checks
+EnchantCheckConstants.MAX_LEVEL = 90 -- Current max level for automated self-checks
 
 ----------------------------------------------
 -- Slot ID Constants
@@ -68,21 +68,21 @@ EnchantCheckConstants.CLASS_COLORS = {
 -- Using numeric indices to avoid dependency on WoW globals at load time
 ----------------------------------------------
 EnchantCheckConstants.ENCHANT_SLOTS = {
-	[1] = false,  -- HEAD (head enchants not required in current content)
+	[1] = true,   -- HEAD
 	[2] = false,   -- NECK
-	[3] = false,   -- SHOULDER
+	[3] = true,    -- SHOULDER
 	[4] = false,   -- BODY (shirt)
 	[5] = true,    -- CHEST
 	[6] = false,   -- WAIST
 	[7] = true,    -- LEGS
 	[8] = true,    -- FEET
-	[9] = true,    -- WRIST
+	[9] = false,   -- WRIST
 	[10] = false,  -- HAND
 	[11] = true,   -- FINGER1
 	[12] = true,   -- FINGER2
 	[13] = false,  -- TRINKET1
 	[14] = false,  -- TRINKET2
-	[15] = true,   -- BACK
+	[15] = false,  -- BACK
 	[16] = true,   -- MAINHAND
 	[17] = true,   -- OFFHAND
 	[18] = false,  -- RANGED (unused)
@@ -162,7 +162,7 @@ EnchantCheckConstants.DEFAULTS = {
 		
 		-- Smart Notification Settings
 		smartNotifications = true,
-		minItemLevelForWarnings = 400,
+		minItemLevelForWarnings = 200,
 		ignoreHeirlooms = true,
 		
 		-- Warning Settings
@@ -235,6 +235,7 @@ EnchantCheckConstants.SOCKET_UPGRADES = {
 EnchantCheckConstants.EXPANSIONS = {
 	DRAGONFLIGHT = 9,
 	THE_WAR_WITHIN = 10,
+	MIDNIGHT = 11,
 }
 
 ----------------------------------------------
@@ -362,20 +363,20 @@ EnchantCheckConstants.CONTENT_TYPES = {
 }
 
 
--- Content-based item level requirements (as of patch 11.2.7)
+-- Content-based item level requirements (Midnight Season 1, post-squish)
 -- These thresholds determine when enchant/gem warnings are shown based on content type
 -- LEVELING: 0 (relaxed - no ilvl requirement, suppress most warnings)
--- DUNGEON: 450 (Heroic dungeon baseline)
--- MYTHIC_PLUS: 480 (M+0 to M+10 range)
--- RAID: 500 (Normal raid entry level)
--- PVP: 460 (Conquest gear baseline)
+-- DUNGEON: 220 (Adventurer baseline)
+-- MYTHIC_PLUS: 250 (Champion track / M+ entry)
+-- RAID: 246 (Normal raid entry level)
+-- PVP: 233 (Veteran baseline)
 EnchantCheckConstants.CONTENT_ILVL_REQUIREMENTS = {
 	[EnchantCheckConstants.CONTENT_TYPES.LEVELING] = 0,
-	[EnchantCheckConstants.CONTENT_TYPES.DUNGEON] = 450,
-	[EnchantCheckConstants.CONTENT_TYPES.MYTHIC_PLUS] = 480,
-	[EnchantCheckConstants.CONTENT_TYPES.RAID] = 500,
-	[EnchantCheckConstants.CONTENT_TYPES.PVP] = 460,
-	[EnchantCheckConstants.CONTENT_TYPES.ENDGAME] = 480
+	[EnchantCheckConstants.CONTENT_TYPES.DUNGEON] = 220,
+	[EnchantCheckConstants.CONTENT_TYPES.MYTHIC_PLUS] = 250,
+	[EnchantCheckConstants.CONTENT_TYPES.RAID] = 246,
+	[EnchantCheckConstants.CONTENT_TYPES.PVP] = 233,
+	[EnchantCheckConstants.CONTENT_TYPES.ENDGAME] = 250
 }
 
 -- Constants are already globally available from line 7
