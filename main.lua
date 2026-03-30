@@ -288,9 +288,10 @@ function EnchantCheck:ValidateModuleDependencies()
 	
 	if tocVersion and EnchantCheckConstants.VERSION then
 		local constantsVersion = EnchantCheckConstants.VERSION:gsub("^v", "") -- Remove 'v' prefix
-		if tocVersion ~= constantsVersion then
-			self:Printf("|cffFFFF00WARNING:|cffFFFFFF Version mismatch - TOC: %s, Constants: %s", 
-				tocVersion, EnchantCheckConstants.VERSION)
+		local tocVersionClean = tocVersion:gsub("^v", "")
+		if tocVersionClean ~= constantsVersion then
+			self:Printf("|cffFFFF00WARNING:|cffFFFFFF Version mismatch - TOC: %s, Constants: %s",
+				tocVersionClean, constantsVersion)
 		end
 	end
 	
