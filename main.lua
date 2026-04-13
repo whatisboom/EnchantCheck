@@ -1587,10 +1587,22 @@ function EnchantCheck:INSPECT_READY(event, guid)
 		self.inspectHideHooked = true
 	end
 
-	-- Auto-check inspected player
+	-- Debounce: INSPECT_READY fires multiple times as item data loads.
+	-- Cancel any pending check and schedule a new one after a short delay
+	-- so we only run once after all data is available.
+	if self.inspectCheckTimer then
+		self:CancelTimer(self.inspectCheckTimer)
+		self.inspectCheckTimer = nil
+	end
+
 	if InspectFrame and InspectFrame.unit then
-		self:CreateAllOverlays("Inspect")
-		self:CheckGear(InspectFrame.unit)
+		local unit = InspectFrame.unit
+		self.inspectCheckTimer = self:ScheduleTimer(function()
+			self.inspectCheckTimer = nil
+			self.scanInProgress = nil -- Clear any stale scan lock
+			self:CreateAllOverlays("Inspect")
+			self:CheckGear(unit)
+		end, 0.5)
 	end
 end
 
@@ -1614,6 +1626,10 @@ end
 -- InspectFrame_OnHide()
 ----------------------------------------------
 function EnchantCheck:InspectFrame_OnHide()
+	if self.inspectCheckTimer then
+		self:CancelTimer(self.inspectCheckTimer)
+		self.inspectCheckTimer = nil
+	end
 	self:ClearAllOverlays("Inspect")
 end
 
