@@ -225,8 +225,8 @@ EnchantCheckConstants.ITEM_LEVEL = {
 -- Socket Upgrade Configuration
 ----------------------------------------------
 EnchantCheckConstants.SOCKET_UPGRADES = {
-	MAX_SOCKETS_PER_JEWELRY = 2, -- Neck and rings can have up to 2 sockets via jewelcrafter
-	UPGRADEABLE_SLOTS = {2, 11, 12}, -- NECK, FINGER1, FINGER2
+	MAX_SOCKETS = 1, -- Head, wrist, and waist can have 1 socket added via Jewelbinder
+	UPGRADEABLE_SLOTS = {1, 9, 6}, -- HEAD, WRIST, WAIST
 }
 
 ----------------------------------------------

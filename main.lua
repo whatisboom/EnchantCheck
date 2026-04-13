@@ -1041,19 +1041,15 @@ function EnchantCheck:CheckPurchaseableUpgrades(items, avgItemLevel, contentType
 		return upgradeableItems, hasUpgradeableItems
 	end
 
-	-- Check each upgradeable jewelry slot
+	-- Check each slot that can have a socket added via Jewelbinder
 	for _, slot in ipairs(EnchantCheckConstants.SOCKET_UPGRADES.UPGRADEABLE_SLOTS) do
 		local item = items[slot]
 		if item.link then
-			-- Calculate total sockets (filled + empty)
 			local totalSockets = item.gems + item.sockets
-			if totalSockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY then
-				-- Use same smart notification logic as enchants
-				if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
-					local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS_PER_JEWELRY - totalSockets
-					table.insert(upgradeableItems, {slot = slot, count = socketsNeeded})
-					hasUpgradeableItems = true
-				end
+			if totalSockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS then
+				local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS - totalSockets
+				table.insert(upgradeableItems, {slot = slot, count = socketsNeeded})
+				hasUpgradeableItems = true
 			end
 		end
 	end
