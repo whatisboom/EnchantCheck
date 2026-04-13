@@ -8,13 +8,6 @@ L["ENABLED"] = "включено."
 L["DISABLED"] = "отключено."
 L["LOADED"] = "загружен."
 
-L["BTN_CHECK_ENCHANTS"] = "Проверить экипировку"
-L["BTN_INVITE"] = "Пригласить"
-
-L["UI_ITEMS_TITLE"] = "Экипировка"
-L["UI_GEMS_TITLE"] = "Камни"
-L["UI_ENCHANTS_TITLE"] = "Чары"
-
 L["ENCHANT_REPORT_HEADER"] = "|cff00FF00Проверка чар|cffFFFFFF для %s (L%d %s):" -- name, level, class
 L["AVG_ITEM_LEVEL"] = "Средний уровень предметов: %d (%d к %d)"
 L["MISSING_ITEMS"] = "Отсутствующие предметы:"

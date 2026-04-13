@@ -23,6 +23,5 @@ Libs\LibItemUpgradeInfo-1.0\Core.lua
 constants.lua
 modules\cache.lua
 modules\utils.lua
-frames.xml
 Locales\locales.xml
 main.lua

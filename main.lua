@@ -107,7 +107,7 @@ function EnchantCheck:ChatCommand(msg)
 	elseif args[1] == "reset" then
 		self:ResetConfig()
 	elseif args[1] == "check" then
-		self:CheckCharacter()
+		self:CheckGear("player", nil, nil, true)
 	elseif args[1] == "cache" then
 		self:ShowCacheStats()
 	else
@@ -143,7 +143,6 @@ function EnchantCheck:ShowConfig()
 	-- Show all settings with nil handling
 	self:Printf("  Smart Notifications: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("smartNotifications") or "nil"))
 	self:Printf("  Enhanced Tooltips: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("showTooltips") or "nil"))
-	self:Printf("  Show Minimap Button: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("showMinimapButton") or "nil"))
 	self:Printf("  Min Item Level for Warnings: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("minItemLevelForWarnings") or "nil"))
 	self:Printf("  Ignore Heirlooms: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("ignoreHeirlooms") or "nil"))
 	self:Printf("  Enable Sounds: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableSounds") or "nil"))
@@ -345,15 +344,6 @@ function EnchantCheck:OnInitialize()
 	self:RegisterChatCommand("enchantcheck", "ChatCommand")
 	self:RegisterChatCommand("ec", "ChatCommand")
 
-	EnchantCheckFrameTitle:SetText("Enchant Check "..self.version);
-
-	CharacterFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
-	InspectFrameEnchantCheckButton:SetText(L["BTN_CHECK_ENCHANTS"]);
-
-	EnchantCheckItemsFrame.titleFont:SetText(L["UI_ITEMS_TITLE"]);
-	EnchantCheckGemsFrame.titleFont:SetText(L["UI_GEMS_TITLE"]);
-	EnchantCheckEnchantsFrame.titleFont:SetText(L["UI_ENCHANTS_TITLE"]);
-
 	if self.db.profile.enable then
 		self:Enable();
 	end
@@ -506,6 +496,10 @@ function EnchantCheck:OnDisable()
 		EnchantCheckCache:StopMaintenanceTimer()
 		EnchantCheckCache:ClearItemCache()
 	end
+
+	-- Hide all overlays
+	self:ClearAllOverlays("Character")
+	self:ClearAllOverlays("Inspect")
 
 	self:Debug(d_notice, L["DISABLED"]);
 end
@@ -876,30 +870,6 @@ function EnchantCheck:FormatMessage(message, severity)
 	return color .. message .. reset
 end
 
-function EnchantCheck:ShowProgressUpdate(current, total, message)
-	if not self:GetSetting("showProgressBar") then
-		return
-	end
-	
-	local percentage = math.floor((current / total) * 100)
-	local progressBar = "["
-	local barLength = 20
-	local filledLength = math.floor((current / total) * barLength)
-	
-	for i = 1, barLength do
-		if i <= filledLength then
-			progressBar = progressBar .. "="
-		else
-			progressBar = progressBar .. "-"
-		end
-	end
-	progressBar = progressBar .. "]"
-	
-	local progressMessage = string.format("%s %s %d%% (%d/%d)", 
-		message or "Scanning", progressBar, percentage, current, total)
-	
-	self:Printf("%s", self:FormatMessage(progressMessage, EnchantCheckConstants.UI.SEVERITY.INFO))
-end
 
 function EnchantCheck:PlayNotificationSound()
 	if not self:GetSetting("enableSounds") then
@@ -1147,143 +1117,289 @@ function EnchantCheck:CalculateItemLevels(items, twoHanded)
 	return avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems
 end
 
-function EnchantCheck:GenerateReport(unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems, missingItems, hasMissingItems, missingGems, hasMissingGems, missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems, contentType)
-	local report = {}
+function EnchantCheck:BuildChatWarnings(unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems, missingItems, hasMissingItems, missingGems, hasMissingGems, missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems, contentType)
 	local warnings = {}
-	local items_state = true
-	local gems_state = true
-	local enchants_state = true
 	local hasAnyIssues = false
-	
-	-- Header with role and content context
-	table.insert(report, "------------")
+
+	-- Header
 	local displayClass, class = UnitClass(unit)
 	local name = UnitName(unit)
-	local classColor = ClassColor[class] or "FFFFFF" -- fallback to white
-	table.insert(report, string.format(L["ENCHANT_REPORT_HEADER"],
+	local classColor = ClassColor[class] or "FFFFFF"
+	table.insert(warnings, string.format(L["ENCHANT_REPORT_HEADER"],
 		"|cff"..classColor..name.."|cffFFFFFF",
 		UnitLevel(unit), "|cff"..classColor..displayClass.."|cffFFFFFF"))
-	
-	-- Add context information with enhanced formatting
-	local contextMsg = string.format("%s Content", contentType)
-	if EnchantCheckConstants and EnchantCheckConstants.UI and EnchantCheckConstants.UI.SEVERITY then
-		table.insert(report, self:FormatMessage(contextMsg, EnchantCheckConstants.UI.SEVERITY.INFO))
-	else
-		table.insert(report, contextMsg)
-	end
-	
-	-- Average item level with color coding
+
+	-- Average item level
 	local ilvlMsg = string.format(L["AVG_ITEM_LEVEL"], floor(avgItemLevel or 0), itemLevelMin or 0, itemLevelMax or 0)
-	local ilvlSeverity = EnchantCheckConstants and EnchantCheckConstants.UI and EnchantCheckConstants.UI.SEVERITY and EnchantCheckConstants.UI.SEVERITY.GOOD or nil
-	local minItemLevel = self:GetSetting("minItemLevelForWarnings")
-	if avgItemLevel and minItemLevel and avgItemLevel < minItemLevel then
-		ilvlSeverity = EnchantCheckConstants and EnchantCheckConstants.UI and EnchantCheckConstants.UI.SEVERITY and EnchantCheckConstants.UI.SEVERITY.WARNING or nil
-	end
-	if ilvlSeverity then
-		table.insert(report, self:FormatMessage(ilvlMsg, ilvlSeverity))
-	else
-		table.insert(report, ilvlMsg)
-	end
-	if EnchantCheckItemsFrame and EnchantCheckItemsFrame.titleInfoFont then
-		EnchantCheckItemsFrame.titleInfoFont:SetText(string.format("%d (%d -> %d)", floor(avgItemLevel or 0), itemLevelMin or 0, itemLevelMax or 0))
-	end
-	
-	-- Check for extremely low item levels
+	table.insert(warnings, self:FormatMessage(ilvlMsg, EnchantCheckConstants.UI.SEVERITY.GOOD))
+
+	-- Low item levels
 	if #lowLevelItems > 0 and self:GetSetting("warnLowItemLevel") then
 		for _, itemData in ipairs(lowLevelItems) do
-			local lowItemMsg = L["LOW_ITEM_LEVEL"] .. " " .. itemData.link
-			local formattedMsg = self:FormatMessage(lowItemMsg, EnchantCheckConstants.UI.SEVERITY.ERROR)
-			table.insert(report, formattedMsg)
-			table.insert(warnings, formattedMsg)
-			EnchantCheckItemsFrame.messages:AddMessage(formattedMsg)
-			items_state = false
+			table.insert(warnings, self:FormatMessage(L["LOW_ITEM_LEVEL"] .. " " .. itemData.link, EnchantCheckConstants.UI.SEVERITY.ERROR))
 			hasAnyIssues = true
 		end
 	end
-	
-	-- Check for missing items
+
+	-- Missing items
 	if hasMissingItems and self:GetSetting("warnMissingItems") then
 		local parts = {}
 		for _, slot in ipairs(missingItems) do
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
-		local s = table.concat(parts, ", ")
-		local missingItemsMsg = L["MISSING_ITEMS"] .. " " .. s
-		local formattedMsg = self:FormatMessage(missingItemsMsg, EnchantCheckConstants.UI.SEVERITY.ERROR)
-		table.insert(report, formattedMsg)
-		table.insert(warnings, formattedMsg)
-		EnchantCheckItemsFrame.messages:AddMessage(formattedMsg)
-		items_state = false
+		table.insert(warnings, self:FormatMessage(L["MISSING_ITEMS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.ERROR))
 		hasAnyIssues = true
 	end
-	
-	-- Check for missing gems
+
+	-- Missing gems
 	if hasMissingGems and self:GetSetting("warnMissingGems") then
 		local parts = {}
 		for _, slot in ipairs(missingGems) do
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
-		local s = table.concat(parts, ", ")
-		local missingGemsMsg = L["MISSING_GEMS"] .. " " .. s
-		local formattedMsg = self:FormatMessage(missingGemsMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
-		table.insert(report, formattedMsg)
-		table.insert(warnings, formattedMsg)
-		EnchantCheckGemsFrame.messages:AddMessage(formattedMsg)
-		gems_state = false
+		table.insert(warnings, self:FormatMessage(L["MISSING_GEMS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
 		hasAnyIssues = true
-	elseif not hasUpgradeableItems then
-		-- Only show "all sockets have gems" if there are no upgradeable items
-		local properGemsMsg = self:FormatMessage(L["PROPER_GEMS"], EnchantCheckConstants.UI.SEVERITY.GOOD)
-		table.insert(report, properGemsMsg)
-		EnchantCheckGemsFrame.messages:AddMessage(properGemsMsg)
 	end
 
-	-- Check for purchaseable socket upgrades (soft warning)
+	-- Purchaseable upgrades
 	if hasUpgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
 		local parts = {}
 		for _, itemData in ipairs(upgradeableItems) do
 			table.insert(parts, L["INVSLOT_"..itemData.slot] .. " (" .. itemData.count .. ")")
 		end
-		local s = table.concat(parts, ", ")
-		-- Apply yellow color directly for visibility
-		local upgradeableMsg = EnchantCheckConstants.UI.COLORS.WARNING .. "- " .. L["UPGRADEABLE_SOCKETS"] .. " " .. s .. EnchantCheckConstants.UI.COLORS.RESET
-		table.insert(report, upgradeableMsg)
-		EnchantCheckGemsFrame.messages:AddMessage(upgradeableMsg)
-		-- Set gems frame to warning state (yellow) if not already failed
-		if gems_state then
-			gems_state = "warning"
-		end
+		table.insert(warnings, self:FormatMessage(L["UPGRADEABLE_SOCKETS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
+		hasAnyIssues = true
 	end
-	
-	-- Check for missing enchants
+
+	-- Missing enchants
 	if hasMissingEnchants and self:GetSetting("warnMissingEnchants") then
 		local parts = {}
 		for _, slot in ipairs(missingEnchants) do
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
-		local s = table.concat(parts, ", ")
-		local missingEnchantsMsg = L["MISSING_ENCHANTS"] .. " " .. s
-		local formattedMsg = self:FormatMessage(missingEnchantsMsg, EnchantCheckConstants.UI.SEVERITY.WARNING)
-		table.insert(report, formattedMsg)
-		table.insert(warnings, formattedMsg)
-		EnchantCheckEnchantsFrame.messages:AddMessage(formattedMsg)
-		enchants_state = false
+		table.insert(warnings, self:FormatMessage(L["MISSING_ENCHANTS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
 		hasAnyIssues = true
-	else
-		local properEnchantsMsg = self:FormatMessage(L["PROPER_ENCHANTS"], EnchantCheckConstants.UI.SEVERITY.GOOD)
-		table.insert(report, properEnchantsMsg)
-		EnchantCheckEnchantsFrame.messages:AddMessage(properEnchantsMsg)
 	end
-	
-	-- Footer
-	table.insert(report, "------------")
-	
-	-- Play notification sound if there are issues
-	if hasAnyIssues then
+
+	if not hasAnyIssues then
+		table.insert(warnings, self:FormatMessage(L["PROPER_ENCHANTS"], EnchantCheckConstants.UI.SEVERITY.GOOD))
+	else
 		self:PlayNotificationSound()
 	end
-	
-	return report, warnings, items_state, gems_state, enchants_state
+
+	return warnings
+end
+
+----------------------------------------------
+-- Slot Overlay System
+----------------------------------------------
+
+-- Storage for overlay frames: self.slotOverlays[prefix][slotId] = overlayFrame
+-- Created lazily per prefix ("Character" or "Inspect")
+
+function EnchantCheck:GetSlotFrame(prefix, slotId)
+	local suffix = EnchantCheckConstants.SLOT_FRAME_NAMES[slotId]
+	if not suffix then return nil end
+	return _G[prefix .. suffix .. "Slot"]
+end
+
+function EnchantCheck:CreateSlotOverlay(slotFrame)
+	local cfg = EnchantCheckConstants.OVERLAY
+	local bs = cfg.BORDER_SIZE
+
+	local overlay = CreateFrame("Frame", nil, slotFrame)
+	overlay:SetAllPoints(slotFrame)
+	overlay:SetFrameLevel(slotFrame:GetFrameLevel() + 2)
+
+	-- Border using 4 edge textures (top, bottom, left, right)
+	local edges = {}
+	local top = overlay:CreateTexture(nil, "OVERLAY")
+	top:SetPoint("TOPLEFT")
+	top:SetPoint("TOPRIGHT")
+	top:SetHeight(bs)
+	edges[1] = top
+
+	local bottom = overlay:CreateTexture(nil, "OVERLAY")
+	bottom:SetPoint("BOTTOMLEFT")
+	bottom:SetPoint("BOTTOMRIGHT")
+	bottom:SetHeight(bs)
+	edges[2] = bottom
+
+	local left = overlay:CreateTexture(nil, "OVERLAY")
+	left:SetPoint("TOPLEFT")
+	left:SetPoint("BOTTOMLEFT")
+	left:SetWidth(bs)
+	edges[3] = left
+
+	local right = overlay:CreateTexture(nil, "OVERLAY")
+	right:SetPoint("TOPRIGHT")
+	right:SetPoint("BOTTOMRIGHT")
+	right:SetWidth(bs)
+	edges[4] = right
+
+	for _, edge in ipairs(edges) do
+		edge:SetColorTexture(1, 0, 0, 0.9)
+	end
+
+	overlay.borderEdges = edges
+
+	-- Create icon buttons (frames for tooltip support)
+	local iconKeys = {"missingEnchant", "missingGem", "lowIlvl", "purchaseableUpgrade"}
+	local iconTextures = {
+		cfg.ICONS.MISSING_ENCHANT,
+		cfg.ICONS.MISSING_GEM,
+		cfg.ICONS.LOW_ILVL,
+		cfg.ICONS.PURCHASEABLE_UPGRADE,
+	}
+	local tooltipKeys = {"MISSING_ENCHANT", "MISSING_GEM", "LOW_ILVL", "PURCHASEABLE_UPGRADE"}
+
+	overlay.icons = {}
+	for i, key in ipairs(iconKeys) do
+		local iconFrame = CreateFrame("Frame", nil, overlay)
+		iconFrame:SetSize(cfg.ICON_SIZE, cfg.ICON_SIZE)
+		iconFrame:SetFrameLevel(overlay:GetFrameLevel() + 1)
+
+		local tex = iconFrame:CreateTexture(nil, "ARTWORK")
+		tex:SetAllPoints()
+		tex:SetTexture(iconTextures[i])
+		iconFrame.texture = tex
+
+		local tooltipText = cfg.TOOLTIPS[tooltipKeys[i]]
+		iconFrame:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(tooltipText, 1, 1, 1)
+			GameTooltip:Show()
+		end)
+		iconFrame:SetScript("OnLeave", function()
+			GameTooltip:Hide()
+		end)
+
+		iconFrame:Hide()
+		overlay.icons[key] = iconFrame
+	end
+
+	overlay:Hide()
+	return overlay
+end
+
+function EnchantCheck:CreateAllOverlays(prefix)
+	if not self.slotOverlays then
+		self.slotOverlays = {}
+	end
+
+	-- Already created for this prefix
+	if self.slotOverlays[prefix] then return end
+
+	self.slotOverlays[prefix] = {}
+	for slotId, _ in pairs(EnchantCheckConstants.SLOT_FRAME_NAMES) do
+		local slotFrame = self:GetSlotFrame(prefix, slotId)
+		if slotFrame then
+			self.slotOverlays[prefix][slotId] = self:CreateSlotOverlay(slotFrame)
+		end
+	end
+end
+
+function EnchantCheck:ClearAllOverlays(prefix)
+	if not self.slotOverlays or not self.slotOverlays[prefix] then return end
+
+	for _, overlay in pairs(self.slotOverlays[prefix]) do
+		overlay:Hide()
+		for _, icon in pairs(overlay.icons) do
+			icon:Hide()
+		end
+	end
+end
+
+function EnchantCheck:UpdateSlotOverlays(prefix, lowLevelItems, missingItems, missingEnchants, missingGems, upgradeableItems)
+	if not self.slotOverlays or not self.slotOverlays[prefix] then
+		self:CreateAllOverlays(prefix)
+	end
+	if not self.slotOverlays or not self.slotOverlays[prefix] then return end
+
+	local cfg = EnchantCheckConstants.OVERLAY
+
+	-- Build per-slot issue map
+	local slotIssues = {} -- slotId -> {missingEnchant, missingGem, lowIlvl, purchaseableUpgrade, hasError}
+
+	-- Low item level (error severity)
+	if lowLevelItems and self:GetSetting("warnLowItemLevel") then
+		for _, itemData in ipairs(lowLevelItems) do
+			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
+			slotIssues[itemData.slot].lowIlvl = true
+			slotIssues[itemData.slot].hasError = true
+		end
+	end
+
+	-- Missing items don't get an overlay icon (the slot is already visibly empty)
+
+	-- Missing enchants (error severity)
+	if missingEnchants and self:GetSetting("warnMissingEnchants") then
+		for _, slot in ipairs(missingEnchants) do
+			if not slotIssues[slot] then slotIssues[slot] = {} end
+			slotIssues[slot].missingEnchant = true
+			slotIssues[slot].hasError = true
+		end
+	end
+
+	-- Missing gems (error severity)
+	if missingGems and self:GetSetting("warnMissingGems") then
+		for _, slot in ipairs(missingGems) do
+			if not slotIssues[slot] then slotIssues[slot] = {} end
+			slotIssues[slot].missingGem = true
+			slotIssues[slot].hasError = true
+		end
+	end
+
+	-- Purchaseable upgrades (warning severity)
+	if upgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
+		for _, itemData in ipairs(upgradeableItems) do
+			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
+			slotIssues[itemData.slot].purchaseableUpgrade = true
+		end
+	end
+
+	-- Apply overlays
+	for slotId, overlay in pairs(self.slotOverlays[prefix]) do
+		local issues = slotIssues[slotId]
+		if issues then
+			-- Set border color based on severity
+			local borderColor = issues.hasError and cfg.BORDER_COLORS.ERROR or cfg.BORDER_COLORS.WARNING
+			for _, edge in ipairs(overlay.borderEdges) do
+				edge:SetColorTexture(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+			end
+
+			-- Position and show relevant icons
+			local iconCount = 0
+			local iconKeys = {"lowIlvl", "missingEnchant", "missingGem", "purchaseableUpgrade"}
+			for _, key in ipairs(iconKeys) do
+				local icon = overlay.icons[key]
+				if issues[key] then
+					icon:ClearAllPoints()
+					icon:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT",
+						-(iconCount * (cfg.ICON_SIZE + cfg.ICON_PADDING)) - cfg.BORDER_SIZE,
+						cfg.BORDER_SIZE)
+					icon:Show()
+					iconCount = iconCount + 1
+				else
+					icon:Hide()
+				end
+			end
+
+			overlay:Show()
+		else
+			overlay:Hide()
+			for _, icon in pairs(overlay.icons) do
+				icon:Hide()
+			end
+		end
+	end
+end
+
+----------------------------------------------
+-- Character Frame Auto-Check
+----------------------------------------------
+function EnchantCheck:OnCharacterFrameShow()
+	self:CheckGear("player")
 end
 
 ----------------------------------------------
@@ -1293,9 +1409,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	-- Check if constants are loaded
 	if not EnchantCheckConstants then
 		self:Debug(d_warn, "EnchantCheckConstants not loaded, cannot check gear")
-		if EnchantCheckFrame and EnchantCheckFrame:IsShown() then
-			EnchantCheckFrame:Hide()
-		end
 		self:Print("|cffFF0000Error: Addon not fully loaded. Please restart World of Warcraft.|r")
 		return
 	end
@@ -1415,11 +1528,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		end
 	end
 	
-	-- Show progress update
-	if totalItems > 0 then
-		self:ShowProgressUpdate(itemsReady, totalItems, "Processing items")
-	end
-	
 	-- Second pass: process ready items in batches
 	for slot, itemData in pairs(itemsToProcess) do
 		local itemTwoHanded = self:ProcessItemData(
@@ -1444,165 +1552,45 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local missingGems, hasMissingGems = self:CheckMissingGems(items)
 	local upgradeableItems, hasUpgradeableItems = self:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
 
-	-- Generate enhanced report with context
-	local report, warnings, items_state, gems_state, enchants_state = self:GenerateReport(
-		unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems,
-		missingItems, hasMissingItems, missingGems, hasMissingGems,
-		missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems,
-		contentType
-	)
-	
-	-- Set UI frame states
-	self:SetCheckFrame(EnchantCheckItemsFrame, items_state)
-	self:SetCheckFrame(EnchantCheckGemsFrame, gems_state)
-	self:SetCheckFrame(EnchantCheckEnchantsFrame, enchants_state)
-	
-	-- Print warnings if requested
+	-- Determine which frame prefix to use for overlays
+	local framePrefix = isInspect and "Inspect" or "Character"
+
+	-- Update slot overlays
+	self:UpdateSlotOverlays(framePrefix, lowLevelItems, missingItems, missingEnchants, missingGems, upgradeableItems)
+
+	-- Print warnings to chat if requested
 	if printWarnings then
+		local warnings = self:BuildChatWarnings(
+			unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems,
+			missingItems, hasMissingItems, missingGems, hasMissingGems,
+			missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems,
+			contentType
+		)
 		for _, warning in ipairs(warnings) do
 			self:Print(warning)
 		end
 	end
-	
-	-- Final memory cleanup
-	report = nil
-	warnings = nil
-	lowLevelItems = nil
 
 	self.scanInProgress = nil
 end
 
-----------------------------------------------
--- CheckCharacter()
-----------------------------------------------
-function EnchantCheck:CheckCharacter()
-	if not self.scanInProgress then
-		if EnchantCheckFrame:GetParent() ~= CharacterModelScene then
-			EnchantCheckFrame:Hide()
-			EnchantCheckFrame:SetParent(CharacterModelScene)
-			EnchantCheckFrame:ClearAllPoints()
-			EnchantCheckFrame:SetAllPoints()
-		elseif EnchantCheckFrame:IsShown() then
-			EnchantCheckFrame:Hide()
-			return
-		end
-		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
-		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
-		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
-		EnchantCheckFrame:Show()
 
-		self:CheckGear("player")
-	end
-end
 
-----------------------------------------------
--- CheckInspected()
-----------------------------------------------
-function EnchantCheck:CheckInspected()
-	if InspectFrame.unit and CanInspect(InspectFrame.unit) then
-		if not self.scanInProgress then
-			if EnchantCheckFrame:GetParent() ~= InspectModelFrame then
-				EnchantCheckFrame:Hide()
-				EnchantCheckFrame:SetParent(InspectModelFrame)
-				EnchantCheckFrame:ClearAllPoints()
-				EnchantCheckFrame:SetAllPoints()
-			elseif EnchantCheckFrame:IsShown() then
-				EnchantCheckFrame:Hide()
-				return
-			end
-			EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
-			EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
-			EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
-			EnchantCheckFrame:Show()
-
-			self:Debug(d_info, "|cff00FF00" .. L["SCAN"] .. "|cffFFFFFF")
-			NotifyInspect(InspectFrame.unit)
-			self.pendingInspection = true
-			self.pendingInspectionGUID = UnitGUID(InspectFrame.unit)
-		end
-	else
-		self:Debug(d_warn, "No inspected unit found!")
-	end
-end
-
-----------------------------------------------
--- ClearCheckFrame(frame)
-----------------------------------------------
-function EnchantCheck:ClearCheckFrame(frame)
-	if not frame then
-		self:Debug(d_warn, "ClearCheckFrame called with nil frame")
-		return
-	end
-
-	-- Clean up with nil checks
-	if frame.titleFont then
-		frame.titleFont:SetTextColor(1, 1, 0)
-	end
-	if frame.titleInfoFont then
-		frame.titleInfoFont:SetText("")
-	end
-	if frame.readyTex then
-		frame.readyTex:Hide()
-	end
-	if frame.notReadyTex then
-		frame.notReadyTex:Hide()
-	end
-	if frame.waitingTex then
-		frame.waitingTex:Show()
-	end
-	if frame.messages then
-		frame.messages:Clear()
-	end
-end
-
-----------------------------------------------
--- SetCheckFrame(frame, value)
--- value: nil/false - red, 1/true - green, anything else - yellow
-----------------------------------------------
-function EnchantCheck:SetCheckFrame(frame, value)
-	if value == 1 or value == true then
-		frame.titleFont:SetTextColor(0, 1, 0)
-		frame.readyTex:Show()
-		frame.notReadyTex:Hide()
-		frame.waitingTex:Hide()
-	elseif not value then
-		frame.titleFont:SetTextColor(1, 0, 0)
-		frame.readyTex:Hide()
-		frame.notReadyTex:Show()
-		frame.waitingTex:Hide()
-	else
-		frame.titleFont:SetTextColor(1, 1, 0)
-		frame.readyTex:Hide()
-		frame.notReadyTex:Hide()
-		frame.waitingTex:Show()
-	end
-end
 
 ----------------------------------------------
 -- INSPECT_READY()
 ----------------------------------------------
 function EnchantCheck:INSPECT_READY(event, guid)
-	-- inspect frame is load-on-demand, add buttons once it is loaded
-	if not InspectFrameEnchantCheckButton:GetParent() and InspectPaperDollFrame then
-		local isElvUILoaded = C_AddOns.IsAddOnLoaded("ElvUI");
-		local offset = isElvUILoaded and EnchantCheckConstants.UI.ELVUI_BUTTON_OFFSET.INSPECT_FRAME or EnchantCheckConstants.UI.DEFAULT_BUTTON_OFFSET.INSPECT_FRAME
-		InspectFrameEnchantCheckButton:SetParent(InspectPaperDollFrame);
-		InspectFrameEnchantCheckButton:ClearAllPoints();
-		InspectFrameEnchantCheckButton:SetPoint("LEFT", InspectPaperDollFrame, "BOTTOMLEFT", offset.x, offset.y);
-		InspectFrameEnchantCheckButton:Show();
-		self:HookScript(InspectFrame, "OnHide", "InspectFrame_OnHide");
-
-		--self:Debug(d_notice, "Added inspect buttons")
+	-- Hook inspect frame hide to clean up overlays (once)
+	if InspectFrame and not self.inspectHideHooked then
+		self:HookScript(InspectFrame, "OnHide", "InspectFrame_OnHide")
+		self.inspectHideHooked = true
 	end
 
-	--self:Debug(d_notice, "INSPECT_READY")
-
-	if self.pendingInspection and self.pendingInspectionGUID == guid then
-		if EnchantCheckFrame:IsShown() then
-			self:CheckGear(InspectFrame.unit)
-		end
-		self.pendingInspection = nil
-		self.pendingInspectionGUID = nil
+	-- Auto-check inspected player
+	if InspectFrame and InspectFrame.unit then
+		self:CreateAllOverlays("Inspect")
+		self:CheckGear(InspectFrame.unit)
 	end
 end
 
@@ -1615,13 +1603,10 @@ function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
 		if EnchantCheckCache then
 			EnchantCheckCache:ClearItemCache()
 		end
-	end
-
-	if EnchantCheckFrame:IsShown() then
-		EnchantCheckFrame:Hide()
-		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
-		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
-		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
+		-- Refresh overlays if character frame is open
+		if PaperDollFrame and PaperDollFrame:IsVisible() then
+			self:CheckGear("player")
+		end
 	end
 end
 
@@ -1629,12 +1614,7 @@ end
 -- InspectFrame_OnHide()
 ----------------------------------------------
 function EnchantCheck:InspectFrame_OnHide()
-	if EnchantCheckFrame:IsShown() then
-		EnchantCheckFrame:Hide()
-		EnchantCheck:ClearCheckFrame(EnchantCheckItemsFrame)
-		EnchantCheck:ClearCheckFrame(EnchantCheckGemsFrame)
-		EnchantCheck:ClearCheckFrame(EnchantCheckEnchantsFrame)
-	end
+	self:ClearAllOverlays("Inspect")
 end
 
 ----------------------------------------------
@@ -1651,17 +1631,14 @@ end
 -- PLAYER_LOGIN()
 ----------------------------------------------
 function EnchantCheck:PLAYER_LOGIN(event)
-	local isElvUILoaded = C_AddOns.IsAddOnLoaded("ElvUI");
-	local checkButton = CharacterFrameEnchantCheckButton;
-
-	if isElvUILoaded and checkButton then
-		local offset = EnchantCheckConstants.UI.ELVUI_BUTTON_OFFSET.CHARACTER_FRAME
-		checkButton:ClearAllPoints();
-		checkButton:SetPoint("RIGHT", checkButton:GetParent(), "BOTTOMRIGHT", offset.x, offset.y);
-	end
-
 	-- Setup tooltip hooks now that all frames should be available
 	if self.needsTooltipHooking then
 		self:SetupTooltipHooks()
+	end
+
+	-- Create overlays and hook character frame for auto-check
+	self:CreateAllOverlays("Character")
+	if PaperDollFrame then
+		self:HookScript(PaperDollFrame, "OnShow", "OnCharacterFrameShow")
 	end
 end

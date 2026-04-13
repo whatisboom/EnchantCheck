@@ -8,13 +8,6 @@ L["ENABLED"] = "aktiviert."
 L["DISABLED"] = "deaktiviert."
 L["LOADED"] = "geladen."
 
-L["BTN_CHECK_ENCHANTS"] = "Prüfen"
-L["BTN_INVITE"] = "Einladen"
-
-L["UI_ITEMS_TITLE"] = "Ausrüstung"
-L["UI_GEMS_TITLE"] = "Edelsteine"
-L["UI_ENCHANTS_TITLE"] = "Verzauberungen"
-
 L["ENCHANT_REPORT_HEADER"] = "|cff00FF00Enchant Check|cffFFFFFF für %s (L%d %s):" -- name, level, class
 L["AVG_ITEM_LEVEL"] = "Durchschnittliches Item-Level: %d (%d to %d)"
 L["MISSING_ITEMS"] = "Fehlende Ausrüstung:"

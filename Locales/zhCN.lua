@@ -8,13 +8,6 @@ L["ENABLED"] = "启用。"
 L["DISABLED"] = "停用。"
 L["LOADED"] = "加载。"
 
-L["BTN_CHECK_ENCHANTS"] = "检查装备"
-L["BTN_INVITE"] = "邀请"
-
-L["UI_ITEMS_TITLE"] = "装备"
-L["UI_GEMS_TITLE"] = "宝石"
-L["UI_ENCHANTS_TITLE"] = "附魔"
-
 L["ENCHANT_REPORT_HEADER"] = "替 %s (L%d %s) 执行 |cff00FF00Enchant Check|cffFFFFFF 检查。" -- name, level, class
 L["AVG_ITEM_LEVEL"] = "平均装备等级：%d (%d to %d)"
 L["MISSING_ITEMS"] = "缺少装备："

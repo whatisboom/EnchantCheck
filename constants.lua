@@ -242,31 +242,71 @@ EnchantCheckConstants.EXPANSIONS = {
 -- UI Constants
 ----------------------------------------------
 EnchantCheckConstants.UI = {
-	DISPLAY_DURATION = 86400, -- Message frame display duration (24 hours)
-	ELVUI_BUTTON_OFFSET = {
-		CHARACTER_FRAME = { x = -10, y = 15 },
-		INSPECT_FRAME = { x = 10, y = -50 },
-	},
-	DEFAULT_BUTTON_OFFSET = {
-		INSPECT_FRAME = { x = 10, y = 20 },
-	},
-	
 	-- Color Codes
 	COLORS = {
 		GOOD = "|cff00FF00",      -- Green
-		WARNING = "|cffFFFF00",   -- Yellow  
+		WARNING = "|cffFFFF00",   -- Yellow
 		ERROR = "|cffFF0000",     -- Red
 		INFO = "|cff00FFFF",      -- Cyan
 		SUGGESTION = "|cff00FF00", -- Light Green
 		RESET = "|cffFFFFFF",     -- White
 	},
-	
+
 	-- Severity Levels
 	SEVERITY = {
 		GOOD = 0,
-		INFO = 1, 
+		INFO = 1,
 		WARNING = 2,
 		ERROR = 3,
+	},
+}
+
+----------------------------------------------
+-- Slot Overlay Configuration
+----------------------------------------------
+
+-- Maps slot ID to the paperdoll frame name suffix
+-- Usage: _G[prefix .. SLOT_FRAME_NAMES[slotId] .. "Slot"]
+-- where prefix is "Character" or "Inspect"
+EnchantCheckConstants.SLOT_FRAME_NAMES = {
+	[1] = "Head",
+	[2] = "Neck",
+	[3] = "Shoulder",
+	[4] = "Body",       -- Shirt
+	[5] = "Chest",
+	[6] = "Waist",
+	[7] = "Legs",
+	[8] = "Feet",
+	[9] = "Wrist",
+	[10] = "Hands",
+	[11] = "Finger0",
+	[12] = "Finger1",
+	[13] = "Trinket0",
+	[14] = "Trinket1",
+	[15] = "Back",
+	[16] = "MainHand",
+	[17] = "SecondaryHand",
+}
+
+EnchantCheckConstants.OVERLAY = {
+	ICON_SIZE = 14,
+	ICON_PADDING = 1,
+	BORDER_SIZE = 2,
+	BORDER_COLORS = {
+		ERROR = { r = 1, g = 0, b = 0, a = 0.9 },     -- Red
+		WARNING = { r = 1, g = 1, b = 0, a = 0.9 },   -- Yellow
+	},
+	ICONS = {
+		MISSING_ENCHANT = "Interface\\Icons\\INV_Enchant_FormulaSuperior_01",
+		MISSING_GEM = "Interface\\Icons\\INV_Misc_Gem_01",
+		LOW_ILVL = "Interface\\Icons\\Spell_ChargeDown",
+		PURCHASEABLE_UPGRADE = "Interface\\Icons\\INV_Misc_Coin_01",
+	},
+	TOOLTIPS = {
+		MISSING_ENCHANT = "Missing enchant",
+		MISSING_GEM = "Missing gem",
+		LOW_ILVL = "Low item level",
+		PURCHASEABLE_UPGRADE = "Can add sockets",
 	},
 }
 
