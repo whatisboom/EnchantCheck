@@ -21,8 +21,8 @@ local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 -- Constants-dependent variables (initialized in OnInitialize)
 local MAX_LEVEL = 80 -- Fallback value
 local ClassColor
-local CheckSlotEnchant = {}
-local CheckSlotMissing = {}
+local CheckSlotEnchant = EnchantCheckConstants.ENCHANT_SLOTS
+local CheckSlotMissing = EnchantCheckConstants.REQUIRED_SLOTS
 local CheckOffHand
 
 ----------------------------------------------
@@ -220,25 +220,6 @@ function EnchantCheck:ShowCacheStats()
 	self:Printf("  TTL: |cffFFFF00%d|cffFFFFFF seconds", stats.ttl)
 end
 
-----------------------------------------------
--- Slot Configuration Initialization
-----------------------------------------------
-function EnchantCheck:InitializeSlotConfigurations()
-	-- Initialize enchant slot requirements
-	for slot = 1, 19 do
-		local value = EnchantCheckConstants.ENCHANT_SLOTS[slot]
-		if value ~= nil then
-			if type(value) == "function" then
-				CheckSlotEnchant[slot] = value()
-			else
-				CheckSlotEnchant[slot] = value
-			end
-		end
-	end
-	
-	-- Get required slots from constants
-	CheckSlotMissing = EnchantCheckConstants.REQUIRED_SLOTS
-end
 
 ----------------------------------------------
 -- Module Dependency Validation
@@ -321,9 +302,6 @@ function EnchantCheck:OnInitialize()
 	d_info = EnchantCheckConstants.DEBUG_LEVELS.INFO
 	d_notice = EnchantCheckConstants.DEBUG_LEVELS.NOTICE
 	debugLevel = d_warn
-	
-	-- Initialize slot configurations
-	self:InitializeSlotConfigurations()
 	
 	-- Initialize weapon configuration
 	CheckOffHand = EnchantCheckConstants.OFFHAND_REQUIRED(LI)
