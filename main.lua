@@ -1253,7 +1253,7 @@ function EnchantCheck:ClearAllOverlays(prefix)
 	end
 end
 
-function EnchantCheck:UpdateSlotOverlays(prefix, lowLevelItems, missingItems, missingEnchants, missingGems, upgradeableItems)
+function EnchantCheck:UpdateSlotOverlays(prefix, results)
 	if not self.slotOverlays or not self.slotOverlays[prefix] then
 		self:CreateAllOverlays(prefix)
 	end
@@ -1265,8 +1265,8 @@ function EnchantCheck:UpdateSlotOverlays(prefix, lowLevelItems, missingItems, mi
 	local slotIssues = {} -- slotId -> {missingEnchant, missingGem, lowIlvl, purchaseableUpgrade, hasError}
 
 	-- Low item level (error severity)
-	if lowLevelItems and self:GetSetting("warnLowItemLevel") then
-		for _, itemData in ipairs(lowLevelItems) do
+	if #results.lowLevelItems > 0 and self:GetSetting("warnLowItemLevel") then
+		for _, itemData in ipairs(results.lowLevelItems) do
 			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
 			slotIssues[itemData.slot].lowIlvl = true
 			slotIssues[itemData.slot].hasError = true
@@ -1276,8 +1276,8 @@ function EnchantCheck:UpdateSlotOverlays(prefix, lowLevelItems, missingItems, mi
 	-- Missing items don't get an overlay icon (the slot is already visibly empty)
 
 	-- Missing enchants (error severity)
-	if missingEnchants and self:GetSetting("warnMissingEnchants") then
-		for _, slot in ipairs(missingEnchants) do
+	if #results.missingEnchants > 0 and self:GetSetting("warnMissingEnchants") then
+		for _, slot in ipairs(results.missingEnchants) do
 			if not slotIssues[slot] then slotIssues[slot] = {} end
 			slotIssues[slot].missingEnchant = true
 			slotIssues[slot].hasError = true
@@ -1285,8 +1285,8 @@ function EnchantCheck:UpdateSlotOverlays(prefix, lowLevelItems, missingItems, mi
 	end
 
 	-- Missing gems (error severity)
-	if missingGems and self:GetSetting("warnMissingGems") then
-		for _, slot in ipairs(missingGems) do
+	if #results.missingGems > 0 and self:GetSetting("warnMissingGems") then
+		for _, slot in ipairs(results.missingGems) do
 			if not slotIssues[slot] then slotIssues[slot] = {} end
 			slotIssues[slot].missingGem = true
 			slotIssues[slot].hasError = true
@@ -1294,8 +1294,8 @@ function EnchantCheck:UpdateSlotOverlays(prefix, lowLevelItems, missingItems, mi
 	end
 
 	-- Purchaseable upgrades (warning severity)
-	if upgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
-		for _, itemData in ipairs(upgradeableItems) do
+	if #results.upgradeableItems > 0 and self:GetSetting("warnPurchaseableUpgrades") then
+		for _, itemData in ipairs(results.upgradeableItems) do
 			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
 			slotIssues[itemData.slot].purchaseableUpgrade = true
 		end
@@ -1495,24 +1495,27 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local missingGems = self:CheckMissingGems(items)
 	local upgradeableItems = self:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
 
+	-- Build shared results table for overlays and warnings
+	local results = {
+		avgItemLevel = avgItemLevel,
+		itemLevelMin = itemLevelMin,
+		itemLevelMax = itemLevelMax,
+		lowLevelItems = lowLevelItems,
+		missingItems = missingItems,
+		missingEnchants = missingEnchants,
+		missingGems = missingGems,
+		upgradeableItems = upgradeableItems,
+	}
+
 	-- Determine which frame prefix to use for overlays
 	local framePrefix = isInspect and "Inspect" or "Character"
 
 	-- Update slot overlays
-	self:UpdateSlotOverlays(framePrefix, lowLevelItems, missingItems, missingEnchants, missingGems, upgradeableItems)
+	self:UpdateSlotOverlays(framePrefix, results)
 
 	-- Print warnings to chat if requested
 	if printWarnings then
-		local warnings = self:BuildChatWarnings(unit, {
-			avgItemLevel = avgItemLevel,
-			itemLevelMin = itemLevelMin,
-			itemLevelMax = itemLevelMax,
-			lowLevelItems = lowLevelItems,
-			missingItems = missingItems,
-			missingEnchants = missingEnchants,
-			missingGems = missingGems,
-			upgradeableItems = upgradeableItems,
-		})
+		local warnings = self:BuildChatWarnings(unit, results)
 		for _, warning in ipairs(warnings) do
 			self:Print(warning)
 		end
