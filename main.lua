@@ -1112,7 +1112,7 @@ function EnchantCheck:CalculateItemLevels(items, twoHanded)
 	return avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems
 end
 
-function EnchantCheck:BuildChatWarnings(unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems, missingItems, hasMissingItems, missingGems, hasMissingGems, missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems, contentType)
+function EnchantCheck:BuildChatWarnings(unit, results)
 	local warnings = {}
 	local hasAnyIssues = false
 
@@ -1125,21 +1125,21 @@ function EnchantCheck:BuildChatWarnings(unit, avgItemLevel, itemLevelMin, itemLe
 		UnitLevel(unit), "|cff"..classColor..displayClass.."|cffFFFFFF"))
 
 	-- Average item level
-	local ilvlMsg = string.format(L["AVG_ITEM_LEVEL"], floor(avgItemLevel or 0), itemLevelMin or 0, itemLevelMax or 0)
+	local ilvlMsg = string.format(L["AVG_ITEM_LEVEL"], floor(results.avgItemLevel or 0), results.itemLevelMin or 0, results.itemLevelMax or 0)
 	table.insert(warnings, self:FormatMessage(ilvlMsg, EnchantCheckConstants.UI.SEVERITY.GOOD))
 
 	-- Low item levels
-	if #lowLevelItems > 0 and self:GetSetting("warnLowItemLevel") then
-		for _, itemData in ipairs(lowLevelItems) do
+	if #results.lowLevelItems > 0 and self:GetSetting("warnLowItemLevel") then
+		for _, itemData in ipairs(results.lowLevelItems) do
 			table.insert(warnings, self:FormatMessage(L["LOW_ITEM_LEVEL"] .. " " .. itemData.link, EnchantCheckConstants.UI.SEVERITY.ERROR))
 			hasAnyIssues = true
 		end
 	end
 
 	-- Missing items
-	if hasMissingItems and self:GetSetting("warnMissingItems") then
+	if #results.missingItems > 0 and self:GetSetting("warnMissingItems") then
 		local parts = {}
-		for _, slot in ipairs(missingItems) do
+		for _, slot in ipairs(results.missingItems) do
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_ITEMS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.ERROR))
@@ -1147,9 +1147,9 @@ function EnchantCheck:BuildChatWarnings(unit, avgItemLevel, itemLevelMin, itemLe
 	end
 
 	-- Missing gems
-	if hasMissingGems and self:GetSetting("warnMissingGems") then
+	if #results.missingGems > 0 and self:GetSetting("warnMissingGems") then
 		local parts = {}
-		for _, slot in ipairs(missingGems) do
+		for _, slot in ipairs(results.missingGems) do
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_GEMS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
@@ -1157,9 +1157,9 @@ function EnchantCheck:BuildChatWarnings(unit, avgItemLevel, itemLevelMin, itemLe
 	end
 
 	-- Purchaseable upgrades
-	if hasUpgradeableItems and self:GetSetting("warnPurchaseableUpgrades") then
+	if #results.upgradeableItems > 0 and self:GetSetting("warnPurchaseableUpgrades") then
 		local parts = {}
-		for _, itemData in ipairs(upgradeableItems) do
+		for _, itemData in ipairs(results.upgradeableItems) do
 			table.insert(parts, L["INVSLOT_"..itemData.slot] .. " (" .. itemData.count .. ")")
 		end
 		table.insert(warnings, self:FormatMessage(L["UPGRADEABLE_SOCKETS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
@@ -1167,9 +1167,9 @@ function EnchantCheck:BuildChatWarnings(unit, avgItemLevel, itemLevelMin, itemLe
 	end
 
 	-- Missing enchants
-	if hasMissingEnchants and self:GetSetting("warnMissingEnchants") then
+	if #results.missingEnchants > 0 and self:GetSetting("warnMissingEnchants") then
 		local parts = {}
-		for _, slot in ipairs(missingEnchants) do
+		for _, slot in ipairs(results.missingEnchants) do
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_ENCHANTS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
@@ -1542,10 +1542,10 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	local contentType = self:DetectContentType(avgItemLevel)
 	
 	-- Use helper functions to check for issues with smart filtering
-	local missingItems, hasMissingItems = self:CheckMissingItems(items, twoHanded)
-	local missingEnchants, hasMissingEnchants = self:CheckMissingEnchants(items, avgItemLevel, contentType)
-	local missingGems, hasMissingGems = self:CheckMissingGems(items)
-	local upgradeableItems, hasUpgradeableItems = self:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
+	local missingItems = self:CheckMissingItems(items, twoHanded)
+	local missingEnchants = self:CheckMissingEnchants(items, avgItemLevel, contentType)
+	local missingGems = self:CheckMissingGems(items)
+	local upgradeableItems = self:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
 
 	-- Determine which frame prefix to use for overlays
 	local framePrefix = isInspect and "Inspect" or "Character"
@@ -1555,12 +1555,16 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 
 	-- Print warnings to chat if requested
 	if printWarnings then
-		local warnings = self:BuildChatWarnings(
-			unit, avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems,
-			missingItems, hasMissingItems, missingGems, hasMissingGems,
-			missingEnchants, hasMissingEnchants, upgradeableItems, hasUpgradeableItems,
-			contentType
-		)
+		local warnings = self:BuildChatWarnings(unit, {
+			avgItemLevel = avgItemLevel,
+			itemLevelMin = itemLevelMin,
+			itemLevelMax = itemLevelMax,
+			lowLevelItems = lowLevelItems,
+			missingItems = missingItems,
+			missingEnchants = missingEnchants,
+			missingGems = missingGems,
+			upgradeableItems = upgradeableItems,
+		})
 		for _, warning in ipairs(warnings) do
 			self:Print(warning)
 		end
