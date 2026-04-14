@@ -340,85 +340,55 @@ function EnchantCheck:SetupTooltipHooks()
 	end
 	
 	local tooltipsHooked = 0
-	
-	-- Try hooking GameTooltip with different approaches
-	if GameTooltip then
-		-- Method 1: Try HookScript with OnTooltipSetItem
-		local success = false
-		if GameTooltip.HasScript and GameTooltip:HasScript("OnTooltipSetItem") then
-			success, err = pcall(function()
-				self:HookScript(GameTooltip, "OnTooltipSetItem", "OnTooltipSetItem")
+
+	-- Try multiple hooking strategies for a tooltip, return true on first success
+	local function tryHookTooltip(tooltip, name)
+		-- Method 1: OnTooltipSetItem (preferred)
+		if tooltip.HasScript and tooltip:HasScript("OnTooltipSetItem") then
+			local ok, err = pcall(function()
+				self:HookScript(tooltip, "OnTooltipSetItem", "OnTooltipSetItem")
 			end)
-			if success then
-				tooltipsHooked = tooltipsHooked + 1
-				self:Debug(d_info, "Successfully hooked GameTooltip via OnTooltipSetItem")
-			else
-				self:Debug(d_warn, "Failed to hook GameTooltip OnTooltipSetItem: %s", err)
+			if ok then
+				self:Debug(d_info, "Hooked %s via OnTooltipSetItem", name)
+				return true
 			end
+			self:Debug(d_warn, "Failed to hook %s OnTooltipSetItem: %s", name, err)
 		end
-		
-		-- Method 2: Try HookScript with OnShow if OnTooltipSetItem failed
-		if not success and GameTooltip.HasScript and GameTooltip:HasScript("OnShow") then
-			success, err = pcall(function()
-				self:HookScript(GameTooltip, "OnShow", function(tooltip)
-					if tooltip:GetItem() then
-						self:OnTooltipSetItem(tooltip)
-					end
+		-- Method 2: OnShow fallback
+		if tooltip.HasScript and tooltip:HasScript("OnShow") then
+			local ok, err = pcall(function()
+				self:HookScript(tooltip, "OnShow", function(tt)
+					if tt:GetItem() then self:OnTooltipSetItem(tt) end
 				end)
 			end)
-			if success then
-				tooltipsHooked = tooltipsHooked + 1
-				self:Debug(d_info, "Successfully hooked GameTooltip via OnShow")
-			else
-				self:Debug(d_warn, "Failed to hook GameTooltip OnShow: %s", err)
+			if ok then
+				self:Debug(d_info, "Hooked %s via OnShow", name)
+				return true
 			end
+			self:Debug(d_warn, "Failed to hook %s OnShow: %s", name, err)
 		end
-		
-		-- Method 3: Try Ace3 Hook as last resort
-		if not success then
-			success, err = pcall(function()
-				self:Hook(GameTooltip, "SetHyperlink", function(tooltip, link)
-					if link and link:match("item:") then
-						self:OnTooltipSetItem(tooltip)
-					end
-				end, true) -- true for post-hook
+		-- Method 3: SetHyperlink fallback
+		if tooltip.SetHyperlink then
+			local ok, err = pcall(function()
+				self:Hook(tooltip, "SetHyperlink", function(tt, link)
+					if link and link:match("item:") then self:OnTooltipSetItem(tt) end
+				end, true)
 			end)
-			if success then
-				tooltipsHooked = tooltipsHooked + 1
-				self:Debug(d_info, "Successfully hooked GameTooltip via SetHyperlink")
-			else
-				self:Debug(d_warn, "Failed to hook GameTooltip SetHyperlink: %s", err)
+			if ok then
+				self:Debug(d_info, "Hooked %s via SetHyperlink", name)
+				return true
 			end
+			self:Debug(d_warn, "Failed to hook %s SetHyperlink: %s", name, err)
 		end
-		
-		if not success then
-			self:Debug(d_warn, "All GameTooltip hooking methods failed")
-		end
-	else
-		self:Debug(d_warn, "GameTooltip not available")
+		return false
 	end
-	
-	-- Try similar approaches for other tooltips
-	local otherTooltips = {"ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2"}
-	for _, tooltipName in ipairs(otherTooltips) do
-		local tooltip = _G[tooltipName]
+
+	local tooltipNames = {"GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2"}
+	for _, name in ipairs(tooltipNames) do
+		local tooltip = _G[name]
 		if tooltip then
-			local success, err = pcall(function()
-				if tooltip.HasScript and tooltip:HasScript("OnTooltipSetItem") then
-					self:HookScript(tooltip, "OnTooltipSetItem", "OnTooltipSetItem")
-				elseif tooltip.SetHyperlink then
-					self:Hook(tooltip, "SetHyperlink", function(tt, link)
-						if link and link:match("item:") then
-							self:OnTooltipSetItem(tt)
-						end
-					end, true)
-				end
-			end)
-			if success then
+			if tryHookTooltip(tooltip, name) then
 				tooltipsHooked = tooltipsHooked + 1
-				self:Debug(d_info, "Successfully hooked %s tooltip", tooltipName)
-			else
-				self:Debug(d_warn, "Failed to hook %s tooltip: %s", tooltipName, err)
 			end
 		end
 	end
