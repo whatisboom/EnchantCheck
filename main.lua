@@ -246,8 +246,7 @@ end
 function EnchantCheck:ValidateModuleDependencies()
 	local requiredModules = {
 		{name = "EnchantCheckConstants", module = EnchantCheckConstants},
-		{name = "EnchantCheckCache", module = EnchantCheckCache},  
-		{name = "EnchantCheckUtils", module = EnchantCheckUtils}
+		{name = "EnchantCheckCache", module = EnchantCheckCache}
 	}
 	
 	local missingModules = {}
