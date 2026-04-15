@@ -22,6 +22,5 @@ Libs\LibItemUpgradeInfo-1.0\Core.lua
 ## embeds.xml
 constants.lua
 modules\cache.lua
-modules\utils.lua
 Locales\locales.xml
 main.lua
