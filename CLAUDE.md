@@ -36,26 +36,36 @@ GitHub Actions packages and uploads to CurseForge. Version convention: `v11.2.7-
 
 **Setup (one-time):** Add `CF_API_KEY` to GitHub secrets. See PUBLISHING.md.
 
+## Manifest Validation
+
+There are two `.toc` files (`EnchantCheck.toc` and `EnchantCheck_Mainline.toc`) that must stay in sync with the actual files on disk. A pre-commit hook enforces this.
+
+**Install once:** `bash scripts/install-hooks.sh`
+
+The hook runs `scripts/validate-manifests.sh`, which checks:
+1. Every entry in every `.toc` points at a real file
+2. Every `<Script file="..."/>` / `<Include file="..."/>` in addon `.xml` resolves
+3. Every non-Libs `.lua` is referenced by some manifest (no orphans)
+
+When adding/removing/renaming a `.lua` or `.xml`, update **both** `.toc` files.
+
 ## Initialization Order (Critical)
 
 WoW addons have strict global loading requirements:
 
 1. **constants.lua** - Creates `_G.EnchantCheckConstants` immediately
 2. **modules/cache.lua** - Defines `EnchantCheckCache` in global scope
-3. **modules/utils.lua** - Utility functions, returns table
-4. **Locales/** - Loaded via locales.xml, creates translation tables
-5. **main.lua** - Creates addon, initializes all systems in `OnInitialize()`
+3. **Locales/** - Loaded via locales.xml, creates translation tables
+4. **main.lua** - Creates addon, initializes all systems in `OnInitialize()`
 
 **Important**: constants.lua uses numeric slot indices (1-18) instead of WoW globals (INVSLOT_*) to avoid load-time dependency issues.
 
 ## File Load Order (EnchantCheck.toc)
 
 ```
-Libs/* (Ace3, LibStub, LibItemUpgradeInfo, LibDBIcon)
+Libs/* (Ace3, LibStub, LibItemUpgradeInfo)
 constants.lua
 modules/cache.lua
-modules/utils.lua
-frames.xml (UI definitions)
 Locales/locales.xml
 main.lua
 ```
