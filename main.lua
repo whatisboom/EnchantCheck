@@ -701,12 +701,7 @@ function EnchantCheck:ProcessItemData(item, slot, itemLink, itemName, itemRarity
 			item[key] = value
 		end
 		
-		-- Still need to check two-handed status for this slot
-		local twoHanded = false
-		if slot == EnchantCheckConstants.SLOT_IDS.MAINHAND and itemSubType and CheckOffHand then
-			twoHanded = CheckOffHand[itemSubType] == false -- Explicit false check
-		end
-		return twoHanded
+		return
 	end
 	
 	local _, itemString = self:GetItemLinkInfo(item.link)
@@ -773,13 +768,7 @@ function EnchantCheck:ProcessItemData(item, slot, itemLink, itemName, itemRarity
 		EnchantCheckCache:SetItemData(item.link, dataToCache)
 	end
 	
-	-- Check if two-handed weapon
-	local twoHanded = false
-	if slot == EnchantCheckConstants.SLOT_IDS.MAINHAND and itemSubType and CheckOffHand then
-		twoHanded = CheckOffHand[itemSubType] == false -- Explicit false check
-	end
-	
-	return twoHanded
+	return
 end
 
 function EnchantCheck:CheckMissingItems(items, twoHanded)
@@ -1330,18 +1319,20 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 	
 	-- Second pass: process ready items in batches
 	for slot, itemData in pairs(itemsToProcess) do
-		local itemTwoHanded = self:ProcessItemData(
-			itemData.item, slot, itemData.itemLink, 
+		self:ProcessItemData(
+			itemData.item, slot, itemData.itemLink,
 			itemData.itemName, itemData.itemRarity, itemData.itemSubType
 		)
-		if itemTwoHanded then
-			twoHanded = true
-		end
 	end
-	
+
 	-- Clear temporary processing data to free memory
 	itemsToProcess = nil
-	
+
+	-- Determine two-handed by checking offhand slot directly
+	-- Handles Titan's Grip (both 2H weapons) and all dual-wield correctly
+	twoHanded = (items[EnchantCheckConstants.SLOT_IDS.MAINHAND].link ~= nil)
+		and (items[EnchantCheckConstants.SLOT_IDS.OFFHAND].link == nil)
+
 	-- Get player context for smart notifications
 	local avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems = self:CalculateItemLevels(items, twoHanded)
 	local contentType = self:DetectContentType(avgItemLevel)
