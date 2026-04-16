@@ -175,9 +175,6 @@ EnchantCheckConstants.DEFAULTS = {
 		-- Sound Settings
 		enableSounds = false,
 
-		-- Visual Settings
-		showTooltips = true,
-
 		-- Content-Specific Settings
 		suppressLevelingWarnings = true,
 		enhancedDungeonChecks = true,

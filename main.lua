@@ -124,7 +124,7 @@ function EnchantCheck:ShowHelp()
 	self:Printf("  |cffFFFF00/enchantcheck toggle <setting>|cffFFFFFF - Toggle a boolean setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck reset|cffFFFFFF - Reset all settings to defaults")
 	self:Printf("  |cffFFFF00/enchantcheck cache|cffFFFFFF - Show cache statistics")
-	self:Printf("  |cff888888Examples: smartNotifications, showTooltips, minItemLevelForWarnings|cffFFFFFF")
+	self:Printf("  |cff888888Examples: smartNotifications, minItemLevelForWarnings|cffFFFFFF")
 end
 
 ----------------------------------------------
@@ -142,7 +142,6 @@ function EnchantCheck:ShowConfig()
 	
 	-- Show all settings with nil handling
 	self:Printf("  Smart Notifications: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("smartNotifications") or "nil"))
-	self:Printf("  Enhanced Tooltips: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("showTooltips") or "nil"))
 	self:Printf("  Min Item Level for Warnings: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("minItemLevelForWarnings") or "nil"))
 	self:Printf("  Ignore Heirlooms: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("ignoreHeirlooms") or "nil"))
 	self:Printf("  Enable Sounds: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableSounds") or "nil"))
@@ -329,85 +328,6 @@ function EnchantCheck:OnInitialize()
 end
 
 ----------------------------------------------
--- OnEnable()
-----------------------------------------------
-----------------------------------------------
--- Tooltip Hooking
-----------------------------------------------
-function EnchantCheck:SetupTooltipHooks()
-	if not self:GetSetting("showTooltips") then
-		return
-	end
-	
-	local tooltipsHooked = 0
-
-	-- Try multiple hooking strategies for a tooltip, return true on first success
-	local function tryHookTooltip(tooltip, name)
-		-- Method 1: OnTooltipSetItem (preferred)
-		if tooltip.HasScript and tooltip:HasScript("OnTooltipSetItem") then
-			local ok, err = pcall(function()
-				self:HookScript(tooltip, "OnTooltipSetItem", "OnTooltipSetItem")
-			end)
-			if ok then
-				self:Debug(d_info, "Hooked %s via OnTooltipSetItem", name)
-				return true
-			end
-			self:Debug(d_warn, "Failed to hook %s OnTooltipSetItem: %s", name, err)
-		end
-		-- Method 2: OnShow fallback
-		if tooltip.HasScript and tooltip:HasScript("OnShow") then
-			local ok, err = pcall(function()
-				self:HookScript(tooltip, "OnShow", function(tt)
-					if tt:GetItem() then self:OnTooltipSetItem(tt) end
-				end)
-			end)
-			if ok then
-				self:Debug(d_info, "Hooked %s via OnShow", name)
-				return true
-			end
-			self:Debug(d_warn, "Failed to hook %s OnShow: %s", name, err)
-		end
-		-- Method 3: SetHyperlink fallback
-		if tooltip.SetHyperlink then
-			local ok, err = pcall(function()
-				self:Hook(tooltip, "SetHyperlink", function(tt, link)
-					if link and link:match("item:") then self:OnTooltipSetItem(tt) end
-				end, true)
-			end)
-			if ok then
-				self:Debug(d_info, "Hooked %s via SetHyperlink", name)
-				return true
-			end
-			self:Debug(d_warn, "Failed to hook %s SetHyperlink: %s", name, err)
-		end
-		return false
-	end
-
-	local tooltipNames = {"GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2"}
-	for _, name in ipairs(tooltipNames) do
-		local tooltip = _G[name]
-		if tooltip then
-			if tryHookTooltip(tooltip, name) then
-				tooltipsHooked = tooltipsHooked + 1
-			end
-		end
-	end
-	
-	if tooltipsHooked > 0 then
-		self:Debug(d_info, "Successfully hooked %d tooltip(s)", tooltipsHooked)
-		self.tooltipsHooked = true
-	else
-		self:Debug(d_warn, "Failed to hook any tooltips - enhanced tooltips may not work")
-		self.tooltipsHooked = false
-		-- Show one-time warning to user and disable tooltip feature
-		self:Printf("|cffFFFF00Warning:|r Enhanced tooltips unavailable. Disabling feature. Please report this issue if it persists.")
-		self.db.profile.showTooltips = false
-	end
-	
-	self.needsTooltipHooking = false
-end
-
-----------------------------------------------
 -- Event Handlers
 ----------------------------------------------
 function EnchantCheck:OnEnable()
@@ -416,9 +336,6 @@ function EnchantCheck:OnEnable()
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
-	-- Defer tooltip hooking until ADDON_LOADED or PLAYER_LOGIN when frames are available
-	self.needsTooltipHooking = self:GetSetting("showTooltips")
-	
 	-- Start cache maintenance timer if caching is enabled
 	if self:GetSetting("enableCaching") then
 		if EnchantCheckCache then
@@ -458,11 +375,6 @@ function EnchantCheck:OnConfigUpdate()
 	-- Update cache configuration
 	if EnchantCheckCache then
 		EnchantCheckCache:ConfigureFromSettings(self.db.profile)
-	end
-	
-	-- Handle tooltip hooks when showTooltips setting changes
-	if self:GetSetting("showTooltips") and not self.tooltipsHooked then
-		self:SetupTooltipHooks()
 	end
 	
 	-- Enable
@@ -727,61 +639,6 @@ function EnchantCheck:GetSocketCountFromLink(itemLink)
 	end
 	
 	return socketCount
-end
-
-function EnchantCheck:OnTooltipSetItem(tooltip)
-	if not self:GetSetting("showTooltips") then return end
-	
-	local name, link = tooltip:GetItem()
-	if not link then return end
-	
-	local slot = self:GetItemSlotFromLink(link)
-	
-	-- Add enchant information
-	local enchantName, enchantId = self:GetEnchantInfoFromLink(link)
-	if slot and CheckSlotEnchant[slot] then
-		if enchantId > 0 then
-			tooltip:AddLine(EnchantCheckConstants.UI.COLORS.GOOD .. "✓ Enchanted" .. EnchantCheckConstants.UI.COLORS.RESET, 1, 1, 1)
-			if enchantName then
-				tooltip:AddLine("  " .. enchantName, 0.8, 0.8, 0.8)
-			end
-		else
-			tooltip:AddLine(EnchantCheckConstants.UI.COLORS.ERROR .. "✗ Missing Enchant" .. EnchantCheckConstants.UI.COLORS.RESET, 1, 1, 1)
-		end
-	end
-	
-	-- Add gem information
-	local gems = self:GetGemInfoFromLink(link)
-	local socketCount = self:GetSocketCountFromLink(link)
-	
-	if socketCount > 0 then
-		local gemmedCount = #gems
-		if gemmedCount == socketCount then
-			tooltip:AddLine(EnchantCheckConstants.UI.COLORS.GOOD .. "✓ All sockets filled (" .. gemmedCount .. "/" .. socketCount .. ")" .. EnchantCheckConstants.UI.COLORS.RESET, 1, 1, 1)
-		else
-			tooltip:AddLine(EnchantCheckConstants.UI.COLORS.WARNING .. "◐ Sockets: " .. gemmedCount .. "/" .. socketCount .. EnchantCheckConstants.UI.COLORS.RESET, 1, 1, 1)
-		end
-		
-		-- List gems
-		for i, gemName in ipairs(gems) do
-			tooltip:AddLine("  " .. EnchantCheckConstants.UI.COLORS.INFO .. gemName .. EnchantCheckConstants.UI.COLORS.RESET, 1, 1, 1)
-		end
-	end
-	
-	-- Add item level context if this is equipped gear
-	if slot then
-		local currentIlvl = self:GetActualItemLevel(link)
-		local playerLevel = UnitLevel("player")
-		local contentType = self:DetectContentType(currentIlvl)
-		
-		-- Show context for endgame players
-		if playerLevel >= EnchantCheckConstants.MAX_LEVEL then
-			local reqIlvl = EnchantCheckConstants.CONTENT_ILVL_REQUIREMENTS[contentType] or 0
-			if currentIlvl < reqIlvl then
-				tooltip:AddLine(EnchantCheckConstants.UI.COLORS.WARNING .. "Below " .. contentType .. " recommended (" .. reqIlvl .. ")" .. EnchantCheckConstants.UI.COLORS.RESET, 1, 1, 1)
-			end
-		end
-	end
 end
 
 ----------------------------------------------
@@ -1597,11 +1454,6 @@ end
 -- PLAYER_LOGIN()
 ----------------------------------------------
 function EnchantCheck:PLAYER_LOGIN(event)
-	-- Setup tooltip hooks now that all frames should be available
-	if self.needsTooltipHooking then
-		self:SetupTooltipHooks()
-	end
-
 	-- Create overlays and hook character frame for auto-check
 	self:CreateAllOverlays("Character")
 	if PaperDollFrame then
