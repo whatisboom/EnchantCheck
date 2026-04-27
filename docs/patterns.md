@@ -1,90 +1,38 @@
 # Lua & WoW API Patterns
 
-## WoW API Patterns
+Non-obvious patterns worth keeping in head. Anything that's already obvious from reading the code isn't here — check the code.
 
-### Item Data Fetching (Asynchronous)
-```lua
-local item = Item:CreateFromItemID(itemID)
-item:ContinueOnItemLoad(function()
-    local itemLink = item:GetItemLink()
-    -- Process item data
-end)
-```
+## Item data readiness
 
-### Tooltip Scanning for Enchant Detection
-```lua
-EnchantCheckTooltip:SetInventoryItem("player", slotID)
-local line = _G["EnchantCheckTooltipTextLeft2"]:GetText()
-```
+`C_Item.GetItemInfo(link)` returns `nil` when the server hasn't delivered full item data yet (first-open race). The addon's rescan loop handles this: it requests data via `C_Item.RequestLoadItemDataByID` and retries up to `rescanCount` times within a single frame. If you add a code path that reads item data, either go through `CheckGear`'s readiness gate or tolerate nil returns.
 
-## Global State Management
+## Item string format
 
-- **Database**: `self.db` (AceDB profile system)
-- **Constants**: `_G.EnchantCheckConstants` (global table)
-- **Cache**: `EnchantCheckCache.ItemCache` (global table)
+`|Hitem:ID:ENCHANT:GEM1:GEM2:GEM3:GEM4:SUFFIX:UNIQUE:LVL:SPEC:UPGRADE:DIFF:NUM_BONUS:...`
+
+`ParseEnchantAndGems` in main.lua extracts the enchant ID and first four gem slots directly via pattern match. If you need other fields, extend the pattern rather than splitting on `:` — fields can be empty (`::`) and gsub-based split handles that fragilely.
 
 ## Localization
+
 ```lua
 local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
-print(L["Missing Enchants"]) -- Uses active locale
+print(L["MISSING_ENCHANTS"])
 ```
 
-## Ace3 Framework Integration
+When adding a new user-facing string: add it to `Locales/enUS.lua` (base locale, which defines the canonical keys), then add translations to the other locale files. Missing translations fall through to the key name.
 
-Main addon object (main.lua:4):
-```lua
-EnchantCheck = LibStub("AceAddon-3.0"):NewAddon("Enchant Check",
-    "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0", "AceTimer-3.0")
-```
+## Ace3 lifecycle
 
-Lifecycle hooks:
-- `OnInitialize()` - One-time setup, DB initialization, constants loading
-- `OnEnable()` - Event registration, UI setup
-- `OnDisable()` - Cleanup (rarely used in WoW addons)
+- `OnInitialize()` — DB setup, runs after all files load but before any events fire.
+- `OnEnable()` — event registration, timer starts.
+- `OnDisable()` — event unregistration, overlay teardown.
 
-## Cache System (modules/cache.lua)
+Ace3 handlers dispatched by name (`self:RegisterEvent("INSPECT_READY")` calls `self:INSPECT_READY(event, ...)`).
 
-- **LRU eviction** when exceeding 500 items
-- **TTL**: 300s default for item data
-- **Hit/miss tracking** for performance monitoring
-- Access via `EnchantCheckCache.ItemCache:Get(itemID)`
+## Content type detection
 
-## Smart Notification System
+`DetectContentType` inspects instance type and difficulty. Thresholds come from `EnchantCheckConstants.CONTENT_ILVL_REQUIREMENTS`. Update constants when a new season shifts item level bands, not scattered conditionals.
 
-Content type detection (main.lua):
-- Inspects player's current activity (instance type, difficulty)
-- Adjusts strictness: leveling (relaxed) → dungeons → mythic+ → raids (strict)
-- Dynamically enables/disables head enchant checks based on WoW season
+## Slot frames (paperdoll overlays)
 
-## Key Technical Details
-
-### Slot Checking Logic
-- **CheckSlotEnchant** table (built in OnInitialize) maps slot IDs to enchant requirements
-- **CheckSlotMissing** table for detecting empty slots
-- **Special cases**: Off-hand (CheckOffHand) - checks if slot should have item based on class/spec
-
-### Head Enchant Season Detection
-1. Checks `EnchantCheckConstants.ENCHANT_SLOTS[1]` (head slot)
-2. Dynamically updates based on game version and season flags
-3. `/ec fixhead` forces re-evaluation
-
-### Performance Considerations
-- **Batch processing**: Gear checks throttled to avoid frame drops
-- **Cache warming**: Pre-loads common item IDs on login
-- **Memory management**: Manual `collectgarbage()` hints after major operations
-- **Event throttling**: Uses AceTimer to debounce rapid events
-
-## Common Modifications
-
-### Adding New Slots to Check
-1. Update `EnchantCheckConstants.ENCHANT_SLOTS` in constants.lua
-2. Update initialization in main.lua:OnInitialize() to map slot correctly
-3. Test with various gear configurations
-
-### Changing Smart Notification Thresholds
-Modify logic in main.lua smart notification detection functions (search for "content type")
-
-### Adding Localization
-1. Add key-value pairs to Locales/enUS.lua (base locale)
-2. Add translations to other locale files (deDE.lua, ruRU.lua, etc.)
-3. Use `L["YourKey"]` in code
+Frame globals follow the pattern `_G[prefix .. SLOT_FRAME_NAMES[slotId] .. "Slot"]` where prefix is `"Character"` or `"Inspect"`. The suffix table in constants.lua is the authoritative mapping — Blizzard's frame names don't always match slot names (e.g. slot 10 = "Hands" frame, slot 12 = "Finger1" frame).

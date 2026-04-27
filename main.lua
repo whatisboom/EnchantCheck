@@ -7,7 +7,6 @@ EnchantCheck = LibStub("AceAddon-3.0"):NewAddon("Enchant Check", "AceConsole-3.0
 -- Localization
 ----------------------------------------------
 local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
-local LI = LibStub("LibBabble-Inventory-3.0"):GetLookupTable()
 
 ----------------------------------------------
 -- Other libs
@@ -15,15 +14,12 @@ local LI = LibStub("LibBabble-Inventory-3.0"):GetLookupTable()
 local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 
 ----------------------------------------------
--- Version and Constants (initialized in OnInitialize)
+-- Constants-dependent locals (initialized in OnInitialize)
 ----------------------------------------------
--- Version and constants will be set in OnInitialize to ensure proper loading order
--- Constants-dependent variables (initialized in OnInitialize)
-local MAX_LEVEL = 80 -- Fallback value
+local MAX_LEVEL
 local ClassColor
 local CheckSlotEnchant = EnchantCheckConstants.ENCHANT_SLOTS
 local CheckSlotMissing = EnchantCheckConstants.REQUIRED_SLOTS
-local CheckOffHand
 
 ----------------------------------------------
 -- Config options and debug levels (initialized in OnInitialize)
@@ -44,30 +40,10 @@ end
 -- Configuration Management
 ----------------------------------------------
 function EnchantCheck:GetSetting(key)
-	if not self.db then
-		self:Debug(d_warn, "GetSetting called before db initialized")
-		return nil
-	end
-	if not self.db.profile then
-		self:Debug(d_warn, "GetSetting called but db.profile is nil")
-		return nil
-	end
-	if type(key) ~= "string" then
-		self:Debug(d_warn, "GetSetting requires string key, got %s", type(key))
-		return nil
-	end
 	return self.db.profile[key]
 end
 
 function EnchantCheck:SetSetting(key, value)
-	if not self.db or not self.db.profile then
-		self:Debug(d_warn, "SetSetting called before db initialized")
-		return
-	end
-	if type(key) ~= "string" then
-		self:Debug(d_warn, "SetSetting requires string key, got %s", type(key))
-		return
-	end
 	self.db.profile[key] = value
 	self:OnConfigUpdate()
 end
@@ -81,10 +57,6 @@ function EnchantCheck:ToggleSetting(key)
 		self:Printf("Setting '%s' is not a boolean value", key)
 		return nil
 	end
-end
-
-function EnchantCheck:IsValidSlot(slot)
-	return type(slot) == "number" and slot >= 1 and slot <= EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL
 end
 
 ----------------------------------------------
@@ -108,8 +80,6 @@ function EnchantCheck:ChatCommand(msg)
 		self:ResetConfig()
 	elseif args[1] == "check" then
 		self:CheckGear("player", nil, nil, true)
-	elseif args[1] == "cache" then
-		self:ShowCacheStats()
 	else
 		self:Printf("|cffFFFF00Unknown command:|r '%s'. Type |cff00FF00/enchantcheck help|r for available commands.", args[1] or "")
 	end
@@ -123,7 +93,6 @@ function EnchantCheck:ShowHelp()
 	self:Printf("  |cffFFFF00/enchantcheck set <setting> <value>|cffFFFFFF - Change a setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck toggle <setting>|cffFFFFFF - Toggle a boolean setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck reset|cffFFFFFF - Reset all settings to defaults")
-	self:Printf("  |cffFFFF00/enchantcheck cache|cffFFFFFF - Show cache statistics")
 	self:Printf("  |cff888888Examples: smartNotifications, minItemLevelForWarnings|cffFFFFFF")
 end
 
@@ -146,22 +115,6 @@ function EnchantCheck:ShowConfig()
 	self:Printf("  Ignore Heirlooms: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("ignoreHeirlooms") or "nil"))
 	self:Printf("  Enable Sounds: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableSounds") or "nil"))
 	self:Printf("  Suppress Leveling Warnings: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("suppressLevelingWarnings") or "nil"))
-	self:Printf("  Enable Caching: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableCaching") or "nil"))
-	self:Printf("  Cache Size: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("cacheSize") or "nil"))
-	self:Printf("  Cache TTL: |cffFFFF00%s|cffFFFFFF seconds", tostring(self:GetSetting("cacheTTL") or "nil"))
-	
-	-- Debug: Show raw profile table
-	self:Printf("|cff00FFFFDebug - Profile keys:|cffFFFFFF")
-	local count = 0
-	for k, v in pairs(self.db.profile) do
-		count = count + 1
-		if count <= 5 then -- Show first 5 keys
-			self:Printf("  %s = %s", tostring(k), tostring(v))
-		end
-	end
-	if count > 5 then
-		self:Printf("  ... and %d more keys", count - 5)
-	end
 end
 
 function EnchantCheck:SetConfigValue(setting, value)
@@ -209,83 +162,10 @@ function EnchantCheck:ResetConfig()
 	self:OnConfigUpdate()
 end
 
-function EnchantCheck:ShowCacheStats()
-	local stats = EnchantCheckCache and EnchantCheckCache:GetCacheStats() or {size = 0, maxSize = 0, hits = 0, misses = 0, hitRate = 0}
-	self:Printf("|cff00FF00EnchantCheck Cache Statistics:|cffFFFFFF")
-	self:Printf("  Cache Size: |cffFFFF00%d|cffFFFFFF / |cffFFFF00%d|cffFFFFFF", stats.size, stats.maxSize)
-	self:Printf("  Cache Hits: |cffFFFF00%d|cffFFFFFF", stats.hits)
-	self:Printf("  Cache Misses: |cffFFFF00%d|cffFFFFFF", stats.misses)
-	self:Printf("  Hit Rate: |cffFFFF00%.1f%%|cffFFFFFF", stats.hitRate)
-	self:Printf("  TTL: |cffFFFF00%d|cffFFFFFF seconds", stats.ttl)
-end
-
-
-----------------------------------------------
--- Module Dependency Validation
-----------------------------------------------
-function EnchantCheck:ValidateModuleDependencies()
-	local requiredModules = {
-		{name = "EnchantCheckConstants", module = EnchantCheckConstants},
-		{name = "EnchantCheckCache", module = EnchantCheckCache}
-	}
-	
-	local missingModules = {}
-	for _, moduleInfo in ipairs(requiredModules) do
-		if not moduleInfo.module then
-			table.insert(missingModules, moduleInfo.name)
-		end
-	end
-	
-	if #missingModules > 0 then
-		self:Printf("|cffFF0000CRITICAL ERROR:|cffFFFFFF Required modules missing: %s", table.concat(missingModules, ", "))
-		self:Printf("Check addon file loading order in TOC file.")
-		return false
-	end
-	
-	-- Validate constants structure
-	local requiredConstants = {"VERSION", "DEFAULTS", "DEBUG_LEVELS", "ENCHANT_SLOTS", "REQUIRED_SLOTS"}
-	local missingConstants = {}
-	for _, constant in ipairs(requiredConstants) do
-		if not EnchantCheckConstants[constant] then
-			table.insert(missingConstants, constant)
-		end
-	end
-	
-	if #missingConstants > 0 then
-		self:Printf("|cffFF0000CRITICAL ERROR:|cffFFFFFF Constants missing: %s", table.concat(missingConstants, ", "))
-		return false
-	end
-	
-	-- Validate version consistency (optional warning, not critical)
-	local tocVersion = nil
-	if C_AddOns and C_AddOns.GetAddOnMetadata then
-		tocVersion = C_AddOns.GetAddOnMetadata("EnchantCheck", "Version")
-	elseif GetAddOnMetadata then
-		tocVersion = GetAddOnMetadata("EnchantCheck", "Version")
-	end
-	
-	if tocVersion and EnchantCheckConstants.VERSION then
-		local constantsVersion = EnchantCheckConstants.VERSION:gsub("^v", "") -- Remove 'v' prefix
-		local tocVersionClean = tocVersion:gsub("^v", "")
-		if tocVersionClean ~= constantsVersion then
-			self:Printf("|cffFFFF00WARNING:|cffFFFFFF Version mismatch - TOC: %s, Constants: %s",
-				tocVersionClean, constantsVersion)
-		end
-	end
-	
-	return true
-end
-
 ----------------------------------------------
 --- Init
 ----------------------------------------------
 function EnchantCheck:OnInitialize()
-	-- Validate required modules are loaded
-	if not self:ValidateModuleDependencies() then
-		return
-	end
-	
-	-- Initialize constants-dependent variables
 	MAX_LEVEL = EnchantCheckConstants.MAX_LEVEL
 	ClassColor = EnchantCheckConstants.CLASS_COLORS
 	
@@ -302,19 +182,8 @@ function EnchantCheck:OnInitialize()
 	d_notice = EnchantCheckConstants.DEBUG_LEVELS.NOTICE
 	debugLevel = d_warn
 	
-	-- Initialize weapon configuration
-	CheckOffHand = EnchantCheckConstants.OFFHAND_REQUIRED(LI)
-
-	-- Centralize API selection for consistent usage throughout addon
-	self.GetItemInfoAPI = (C_Item and C_Item.GetItemInfo) and C_Item.GetItemInfo or GetItemInfo
-
 	-- Initialize database
 	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile")
-	
-	-- Initialize cache system
-	if EnchantCheckCache then
-		EnchantCheckCache:ConfigureFromSettings(self.db.profile)
-	end
 
 	-- Register console commands
 	self:RegisterChatCommand("enchantcheck", "ChatCommand")
@@ -336,13 +205,6 @@ function EnchantCheck:OnEnable()
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
-	-- Start cache maintenance timer if caching is enabled
-	if self:GetSetting("enableCaching") then
-		if EnchantCheckCache then
-			EnchantCheckCache:StartMaintenanceTimer(60) -- Every minute
-		end
-	end
-
 	self:Debug(d_notice, L["ENABLED"]);
 end
 
@@ -354,12 +216,8 @@ function EnchantCheck:OnDisable()
 	self:UnregisterEvent("UNIT_INVENTORY_CHANGED");
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	self:UnregisterEvent("PLAYER_LOGIN");
-	
-	-- Stop cache maintenance and clear cache
-	if EnchantCheckCache then
-		EnchantCheckCache:StopMaintenanceTimer()
-		EnchantCheckCache:ClearItemCache()
-	end
+
+	self:CancelAllTimers()
 
 	-- Hide all overlays
 	self:ClearAllOverlays("Character")
@@ -372,11 +230,6 @@ end
 -- OnConfigUpdate()
 ----------------------------------------------
 function EnchantCheck:OnConfigUpdate()
-	-- Update cache configuration
-	if EnchantCheckCache then
-		EnchantCheckCache:ConfigureFromSettings(self.db.profile)
-	end
-	
 	-- Enable
 	if (self.db.profile.enable) then
 		if not EnchantCheck:IsEnabled() then
@@ -396,95 +249,30 @@ function EnchantCheck:GetActualItemLevel(link)
 	if not link or link == "" then
 		return 0
 	end
-	
-	local success, itemLevel = pcall(function()
-		return libItemUpgrade:GetUpgradedItemLevel(link)
-	end)
-	
-	if success and itemLevel and itemLevel > 0 then
+
+	local itemLevel = libItemUpgrade:GetUpgradedItemLevel(link)
+	if itemLevel and itemLevel > 0 then
 		return itemLevel
-	else
-		-- Fallback to basic item level using centralized API
-		local _, _, _, basicLevel = self.GetItemInfoAPI(link)
-		return basicLevel or 0
 	end
+
+	local _, _, _, basicLevel = C_Item.GetItemInfo(link)
+	return basicLevel or 0
 end
 
-function EnchantCheck:GetItemLinkInfo(link)
-	if not link or type(link) ~= "string" or link == "" then
-		return nil, nil, nil
-	end
-
-	-- Delegate to utility function with debug logging
-	if not link:match("|Hitem:") then
-		self:Debug(d_warn, "Invalid item link format: %s", tostring(link))
-		return nil, nil, nil
-	end
-
-	-- Use centralized implementation from utils
-	local itemColor, itemString, itemName
-
-	-- Pattern 1: Full item link with color
-	itemColor, itemString, itemName = link:match("(|c%x+)|Hitem:([-%d:]*)|h%[(.-)%]|h|r")
-
-	if not itemString then
-		-- Pattern 2: Item link without color but with name
-		itemString, itemName = link:match("|Hitem:([-%d:]*)|h%[(.-)%]|h")
-		if itemString then
-			itemColor = "|cffffffff"
-		end
-	end
-
-	if not itemString then
-		-- Pattern 3: Item link without name (truncated)
-		itemString = link:match("|Hitem:([-%d:]*)")
-		if itemString then
-			itemName = "Unknown Item"
-			itemColor = "|cffffffff"
-		end
-	end
-	
-	if not itemString then
-		-- Pattern 4: Just extract the item ID and build a basic string
-		local itemId = link:match("|Hitem:(%d+)")
-		if itemId then
-			itemString = itemId .. ":::::::::::::::::"  -- Basic item string format
-			itemName = "Item " .. itemId
-			itemColor = "|cffffffff"
-		else
-			-- Complete failure - log more details
-			self:Debug(d_warn, "Failed to parse any item data from link (length=%d): %s", 
-				string.len(link or ""), string.sub(tostring(link), 1, 150))
-			return nil, nil, nil
-		end
-	end
-	
-	return itemColor, itemString, itemName
+-- Extract (enchantID, gemCount) from the item string embedded in a link.
+-- Item string format: ItemID:EnchantID:Gem1:Gem2:Gem3:Gem4:...
+-- Returns 0, 0 if the link doesn't parse.
+function EnchantCheck:ParseEnchantAndGems(link)
+	local enchant, g1, g2, g3, g4 = link:match("|Hitem:%d+:(%d*):(%d*):(%d*):(%d*):(%d*)")
+	if not enchant then return 0, 0 end
+	local gemCount = 0
+	if tonumber(g1) and tonumber(g1) > 0 then gemCount = gemCount + 1 end
+	if tonumber(g2) and tonumber(g2) > 0 then gemCount = gemCount + 1 end
+	if tonumber(g3) and tonumber(g3) > 0 then gemCount = gemCount + 1 end
+	if tonumber(g4) and tonumber(g4) > 0 then gemCount = gemCount + 1 end
+	return tonumber(enchant) or 0, gemCount
 end
 
-
-----------------------------------------------
--- Item string functions
-----------------------------------------------
-function EnchantCheck:StringSplit(separator, value)
-	local fields = {};
-	gsub(value..separator, "([^"..separator.."]*)"..separator, function(v) table.insert(fields, v) end);
-	return fields;
-end
-
-function EnchantCheck:SplitValue(value)
-	if ( value == "" ) then
-		value = "0"
-	end
-	return tonumber(value)
-end
-
-
-----------------------------------------------
--- Cache System Reference
-----------------------------------------------
--- Cache functionality moved to modules/cache.lua
--- Using EnchantCheckCache for all caching operations
 
 ----------------------------------------------
 -- Smart Notification System
@@ -572,106 +360,20 @@ end
 
 
 ----------------------------------------------
--- Tooltip Enhancement System
-----------------------------------------------
-
-function EnchantCheck:GetItemSlotFromLink(itemLink)
-	if not itemLink then return nil end
-	
-	-- Check if this item is currently equipped
-	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
-		local equippedLink = GetInventoryItemLink("player", slot)
-		if equippedLink and equippedLink == itemLink then
-			return slot
-		end
-	end
-	return nil
-end
-
-function EnchantCheck:GetEnchantInfoFromLink(itemLink)
-	if not itemLink then return nil, 0 end
-	
-	local _, itemString = self:GetItemLinkInfo(itemLink)
-	if not itemString then return nil, 0 end
-	
-	local ids = self:StringSplit(":", itemString)
-	if not ids or #ids < 2 then return nil, 0 end
-	
-	local enchantId = self:SplitValue(ids[2] or "0")
-	local enchantName = nil
-	
-	-- Try to get enchant name if enchanted
-	if enchantId > 0 then
-		-- This would need enchant ID -> name mapping, simplified for now
-		enchantName = "Enchanted (ID: " .. enchantId .. ")"
-	end
-	
-	return enchantName, enchantId
-end
-
-function EnchantCheck:GetGemInfoFromLink(itemLink)
-	if not itemLink then return {} end
-	
-	local gems = {}
-	for i = 1, 4 do
-		local _, gemLink = GetItemGem(itemLink, i)
-		if gemLink then
-			local gemName = self.GetItemInfoAPI(gemLink)
-			if gemName then
-				table.insert(gems, gemName)
-			end
-		end
-	end
-	return gems
-end
-
-function EnchantCheck:GetSocketCountFromLink(itemLink)
-	if not itemLink then return 0 end
-	
-	local success, stats = pcall(C_Item.GetItemStats, itemLink)
-	if not success or not stats then return 0 end
-	
-	local socketCount = 0
-	for label in pairs(stats) do
-		if label and label:find("EMPTY_SOCKET_", 1, true) then
-			socketCount = socketCount + 1
-		end
-	end
-	
-	return socketCount
-end
-
-----------------------------------------------
 -- Visual Enhancement Functions
 ----------------------------------------------
 
 function EnchantCheck:GetColorForSeverity(severity)
-	-- Return default color if constants not loaded
-	if not EnchantCheckConstants or not EnchantCheckConstants.UI or not EnchantCheckConstants.UI.COLORS or not EnchantCheckConstants.UI.SEVERITY then
-		return ""
-	end
-	
-	if not self:GetSetting("colorCodeSeverity") then
-		return EnchantCheckConstants.UI.COLORS.RESET
-	end
-	
-	if severity == EnchantCheckConstants.UI.SEVERITY.GOOD then
-		return EnchantCheckConstants.UI.COLORS.GOOD
-	elseif severity == EnchantCheckConstants.UI.SEVERITY.INFO then
-		return EnchantCheckConstants.UI.COLORS.INFO
-	elseif severity == EnchantCheckConstants.UI.SEVERITY.WARNING then
-		return EnchantCheckConstants.UI.COLORS.WARNING
-	elseif severity == EnchantCheckConstants.UI.SEVERITY.ERROR then
-		return EnchantCheckConstants.UI.COLORS.ERROR
-	else
-		return EnchantCheckConstants.UI.COLORS.RESET
-	end
+	local UI = EnchantCheckConstants.UI
+	if severity == UI.SEVERITY.GOOD then return UI.COLORS.GOOD end
+	if severity == UI.SEVERITY.INFO then return UI.COLORS.INFO end
+	if severity == UI.SEVERITY.WARNING then return UI.COLORS.WARNING end
+	if severity == UI.SEVERITY.ERROR then return UI.COLORS.ERROR end
+	return UI.COLORS.RESET
 end
 
 function EnchantCheck:FormatMessage(message, severity)
-	local color = self:GetColorForSeverity(severity)
-	local reset = EnchantCheckConstants and EnchantCheckConstants.UI and EnchantCheckConstants.UI.COLORS and EnchantCheckConstants.UI.COLORS.RESET or "|r"
-	return color .. message .. reset
+	return self:GetColorForSeverity(severity) .. message .. EnchantCheckConstants.UI.COLORS.RESET
 end
 
 
@@ -687,88 +389,26 @@ end
 -- Helper Functions for CheckGear
 ----------------------------------------------
 
-function EnchantCheck:ProcessItemData(item, slot, itemLink, itemName, itemRarity, itemSubType)
-	if not item or not item.link then
-		self:Debug(d_warn, "ProcessItemData called with invalid item")
-		return false
-	end
-	
-	-- Check cache first
-	local cachedData = EnchantCheckCache and EnchantCheckCache:GetItemData(item.link) or nil
-	if cachedData then
-		-- Apply cached data to item
-		for key, value in pairs(cachedData) do
-			item[key] = value
-		end
-		
-		return
-	end
-	
-	local _, itemString = self:GetItemLinkInfo(item.link)
-	if not itemString then
-		self:Debug(d_warn, "Failed to get item string for slot %d", slot)
-		return false
-	end
-	
-	local ids = self:StringSplit(":", itemString)
-	if not ids or #ids < 6 then
-		self:Debug(d_warn, "Invalid item string format for slot %d", slot)
-		return false
-	end
-	
-	-- Parse item string components with error handling
-	local enchant = self:SplitValue(ids[2] or "0")
-	local gems = {
-		self:SplitValue(ids[3] or "0"),
-		self:SplitValue(ids[4] or "0"),
-		self:SplitValue(ids[5] or "0"),
-		self:SplitValue(ids[6] or "0")
-	}
-	
-	-- Count gems efficiently
-	item.gems = 0
-	for _, gemId in ipairs(gems) do
-		if gemId > 0 then
-			item.gems = item.gems + 1
-		end
-	end
-	
-	-- Set item properties with safe defaults
-	item.rarity = itemRarity or 0
-	item.enchant = enchant or 0
+function EnchantCheck:ProcessItemData(item, slot)
+	local _, _, rarity = C_Item.GetItemInfo(item.link)
+	local enchant, gemCount = self:ParseEnchantAndGems(item.link)
+	item.rarity = rarity or 0
+	item.enchant = enchant
+	item.gems = gemCount
 	item.level = self:GetActualItemLevel(item.link) or 0
-	
-	-- Debug: warn if item level is 0
+
 	if item.level == 0 then
-		self:Debug(d_warn, "Warning: Item level is 0 for slot %d (%s)", slot, item.link or "no link")
+		self:Debug(d_warn, "Item level is 0 for slot %d (%s)", slot, item.link)
 	end
-	
-	-- Safely get item stats
-	local success, stats = pcall(C_Item.GetItemStats, item.link)
-	item.stats = (success and stats) and stats or {}
-	
-	-- Count sockets efficiently
+
+	item.stats = C_Item.GetItemStats(item.link) or {}
+
 	item.sockets = 0
 	for label in pairs(item.stats) do
-		if label and label:find("EMPTY_SOCKET_", 1, true) then -- faster than regex
+		if label:find("EMPTY_SOCKET_", 1, true) then
 			item.sockets = item.sockets + 1
 		end
 	end
-	
-	-- Cache the processed data
-	local dataToCache = {
-		gems = item.gems,
-		rarity = item.rarity,
-		enchant = item.enchant,
-		level = item.level,
-		stats = item.stats,
-		sockets = item.sockets
-	}
-	if EnchantCheckCache then
-		EnchantCheckCache:SetItemData(item.link, dataToCache)
-	end
-	
-	return
 end
 
 function EnchantCheck:CheckMissingItems(items, twoHanded)
@@ -796,8 +436,7 @@ function EnchantCheck:CheckMissingEnchants(items, avgItemLevel, contentType)
 		if item.link and (item.enchant == 0) then
 			-- Use smart notification system to determine if we should warn
 			if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
-				-- Use centralized API
-				local itemType = select(6, self.GetItemInfoAPI(item.link))
+				local itemType = select(6, C_Item.GetItemInfo(item.link))
 
 				if not (libItemUpgrade:IsArtifact(item.link) or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
 					table.insert(missingEnchants, slot)
@@ -1195,42 +834,16 @@ end
 -- Gear Checking System
 ----------------------------------------------
 function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
-	-- Check if constants are loaded
-	if not EnchantCheckConstants then
-		self:Debug(d_warn, "EnchantCheckConstants not loaded, cannot check gear")
-		self:Print("|cffFF0000Error: Addon not fully loaded. Please restart World of Warcraft.|r")
-		return
-	end
-	
 	local isInspect = not UnitIsUnit("player", unit)
-	local doRescan = false
-	local twoHanded = false
-	
-	-- Initialize parameters
-	if not items then items = {} end
-	if not iter then iter = 0 end
+	items = items or {}
+	iter = iter or 0
 
-	-- Check for scan timeout (prevent forever-locked scans)
-	if self.scanInProgress then
-		local scanAge = GetTime() - self.scanInProgress
-		if scanAge < 10 then -- 10 second timeout
-			self:Debug(d_warn, "Scan already in progress (%.1fs old)", scanAge)
-			return
-		else
-			self:Debug(d_warn, "Previous scan timed out (%.1fs), forcing new scan", scanAge)
-			self.scanInProgress = nil
-		end
-	end
-
-	self.scanInProgress = GetTime()
 	libItemUpgrade:CleanCache()
-	
-	-- Batch process items for better performance
-	local itemsToProcess = {}
+
 	local itemsReady = 0
 	local totalItems = 0
-	
-	-- First pass: collect item data and check readiness
+	local doRescan = false
+
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = {
 			gems = 0,
@@ -1238,106 +851,56 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 			enchant = 0,
 			level = 0,
 			stats = {},
-			sockets = 0
+			sockets = 0,
 		}
 		item.id = GetInventoryItemID(unit, slot)
 		item.link = GetInventoryItemLink(unit, slot)
-		
+
 		if item.link then
 			totalItems = totalItems + 1
-			-- Use modern C_Item API with fallback
-			local success, itemName, itemLink, itemRarity, itemLevel, itemMinLevel,
-				itemType, itemSubType, itemStackCount, itemEquipLoc,
-				itemTexture, itemSellPrice
-			
-			if C_Item and C_Item.GetItemInfo then
-				success, itemName, itemLink, itemRarity, itemLevel, itemMinLevel,
-					itemType, itemSubType, itemStackCount, itemEquipLoc,
-					itemTexture, itemSellPrice = pcall(C_Item.GetItemInfo, item.link)
-			else
-				-- Fallback to legacy API
-				success, itemName, itemLink, itemRarity, itemLevel, itemMinLevel,
-					itemType, itemSubType, itemStackCount, itemEquipLoc,
-					itemTexture, itemSellPrice = pcall(GetItemInfo, item.link)
-			end
-			
-			if success and itemLink then
+			if C_Item.GetItemInfo(item.link) then
 				itemsReady = itemsReady + 1
-				itemsToProcess[slot] = {
-					item = item,
-					itemName = itemName,
-					itemLink = itemLink, 
-					itemRarity = itemRarity,
-					itemSubType = itemSubType
-				}
+				self:ProcessItemData(item, slot)
 			else
-				-- Item data not ready
 				doRescan = true
 			end
 		elseif item.id then
-			-- Item ID exists but link not ready
 			doRescan = true
 		end
-		
+
 		items[slot] = item
 	end
-	
-	-- Handle rescan if needed
+
 	if doRescan then
 		if iter < self.db.profile.rescanCount then
 			local rescanMsg = string.format(L["RESCAN"] .. " (%d/%d items ready)", itemsReady, totalItems)
 			self:Debug(d_info, "%s", self:FormatMessage(rescanMsg, EnchantCheckConstants.UI.SEVERITY.WARNING))
-			-- Instead of using timer, collect all item data first
-			for i = 1, 5 do -- Force-load item data with multiple attempts
-				local allReady = true
-				for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
-					local link = GetInventoryItemLink(unit, slot)
-					if link then
-						local itemName = GetItemInfo(link)
-						if not itemName then
-							allReady = false
-							-- Force request item data
-							local itemID = GetItemInfoFromHyperlink(link)
-							if itemID and C_Item and C_Item.RequestLoadItemDataByID then
-								C_Item.RequestLoadItemDataByID(itemID)
-							end
-						end
+			for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
+				local link = GetInventoryItemLink(unit, slot)
+				if link and not C_Item.GetItemInfo(link) then
+					local itemID = GetItemInfoFromHyperlink(link)
+					if itemID then
+						C_Item.RequestLoadItemDataByID(itemID)
 					end
 				end
-				if allReady then break end
 			end
-			-- Continue immediately without timer
-			self:CheckGear(unit, items, iter+1)
+			self:ScheduleTimer("CheckGear", 0.2, unit, items, iter+1)
 			return
 		else
 			local incompleteMsg = string.format(L["SCAN_INCOMPLETE"] .. " (%d/%d items ready)", itemsReady, totalItems)
 			self:Debug(d_warn, "%s", self:FormatMessage(incompleteMsg, EnchantCheckConstants.UI.SEVERITY.ERROR))
-			self.scanInProgress = nil
 			return
 		end
 	end
-	
-	-- Second pass: process ready items in batches
-	for slot, itemData in pairs(itemsToProcess) do
-		self:ProcessItemData(
-			itemData.item, slot, itemData.itemLink,
-			itemData.itemName, itemData.itemRarity, itemData.itemSubType
-		)
-	end
 
-	-- Clear temporary processing data to free memory
-	itemsToProcess = nil
+	-- Titan's Grip and dual-wield produce both slots occupied; a true 2H
+	-- always leaves offhand empty.
+	local twoHanded = items[EnchantCheckConstants.SLOT_IDS.MAINHAND].link ~= nil
+		and items[EnchantCheckConstants.SLOT_IDS.OFFHAND].link == nil
 
-	-- Determine two-handed by checking offhand slot directly
-	-- Handles Titan's Grip (both 2H weapons) and all dual-wield correctly
-	twoHanded = (items[EnchantCheckConstants.SLOT_IDS.MAINHAND].link ~= nil)
-		and (items[EnchantCheckConstants.SLOT_IDS.OFFHAND].link == nil)
-
-	-- Get player context for smart notifications
 	local avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems = self:CalculateItemLevels(items, twoHanded)
 	local contentType = self:DetectContentType(avgItemLevel)
-	
-	-- Use helper functions to check for issues with smart filtering
+
 	local missingItems = self:CheckMissingItems(items, twoHanded)
 	local missingEnchants = self:CheckMissingEnchants(items, avgItemLevel, contentType)
 	local missingGems = self:CheckMissingGems(items)
@@ -1368,8 +931,6 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 			self:Print(warning)
 		end
 	end
-
-	self.scanInProgress = nil
 end
 
 
@@ -1397,7 +958,6 @@ function EnchantCheck:INSPECT_READY(event, guid)
 		local unit = InspectFrame.unit
 		self.inspectCheckTimer = self:ScheduleTimer(function()
 			self.inspectCheckTimer = nil
-			self.scanInProgress = nil -- Clear any stale scan lock
 			self:CreateAllOverlays("Inspect")
 			self:CheckGear(unit)
 		end, 0.5)
@@ -1408,15 +968,8 @@ end
 -- UNIT_INVENTORY_CHANGED()
 ----------------------------------------------
 function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
-	-- Clear item cache when inventory changes
-	if UnitIsUnit("player", unit) then
-		if EnchantCheckCache then
-			EnchantCheckCache:ClearItemCache()
-		end
-		-- Refresh overlays if character frame is open
-		if PaperDollFrame and PaperDollFrame:IsVisible() then
-			self:CheckGear("player")
-		end
+	if UnitIsUnit("player", unit) and PaperDollFrame and PaperDollFrame:IsVisible() then
+		self:CheckGear("player")
 	end
 end
 

@@ -116,31 +116,6 @@ EnchantCheckConstants.REQUIRED_SLOTS = {
 }
 
 ----------------------------------------------
--- Weapon Configuration - Which main-hand weapons require an off-hand item?
-----------------------------------------------
-EnchantCheckConstants.OFFHAND_REQUIRED = function(LI)
-	return {
-		[LI["Bows"]] = false,
-		[LI["Crossbows"]] = false,
-		[LI["Daggers"]] = true,
-		[LI["Guns"]] = false,
-		[LI["Fishing Poles"]] = false,
-		[LI["Fist Weapons"]] = true,
-		[LI["Miscellaneous"]] = true,
-		[LI["One-Handed Axes"]] = true,
-		[LI["One-Handed Maces"]] = true,
-		[LI["One-Handed Swords"]] = true,
-		[LI["Polearms"]] = false,
-		[LI["Staves"]] = false,
-		[LI["Thrown"]] = false,
-		[LI["Two-Handed Axes"]] = false,
-		[LI["Two-Handed Maces"]] = false,
-		[LI["Two-Handed Swords"]] = false,
-		[LI["Wands"]] = true,
-	}
-end
-
-----------------------------------------------
 -- Debug Levels
 ----------------------------------------------
 EnchantCheckConstants.DEBUG_LEVELS = {
@@ -156,8 +131,7 @@ EnchantCheckConstants.DEBUG_LEVELS = {
 EnchantCheckConstants.DEFAULTS = {
 	profile = {
 		enable = true,
-		rescanTimer = 1,
-		rescanCount = 2,
+		rescanCount = 10,
 		debugLevel = EnchantCheckConstants.DEBUG_LEVELS.WARNING,
 		
 		-- Smart Notification Settings
@@ -178,27 +152,7 @@ EnchantCheckConstants.DEFAULTS = {
 		-- Content-Specific Settings
 		suppressLevelingWarnings = true,
 		enhancedDungeonChecks = true,
-
-		-- Performance Settings
-		enableCaching = true,
-		cacheSize = 500, -- Maximum number of cached items
-		cacheTTL = 300, -- Cache time-to-live in seconds (5 minutes)
 	},
-}
-
-----------------------------------------------
--- Primary Stats Configuration
-----------------------------------------------
-EnchantCheckConstants.STAT_STRINGS = {
-	["STRENGTH"] = "STRENGTH",
-	["AGILITY"] = "AGILITY",
-	["INTELLECT"] = "INTELLECT",
-}
-
-EnchantCheckConstants.PRIMARY_STATS = {
-	[1] = EnchantCheckConstants.STAT_STRINGS.STRENGTH,
-	[2] = EnchantCheckConstants.STAT_STRINGS.AGILITY,
-	[4] = EnchantCheckConstants.STAT_STRINGS.INTELLECT,
 }
 
 ----------------------------------------------
@@ -224,15 +178,6 @@ EnchantCheckConstants.ITEM_LEVEL = {
 EnchantCheckConstants.SOCKET_UPGRADES = {
 	MAX_SOCKETS = 1, -- Head, wrist, and waist can have 1 socket added via Jewelbinder
 	UPGRADEABLE_SLOTS = {1, 9, 6}, -- HEAD, WRIST, WAIST
-}
-
-----------------------------------------------
--- Expansion Constants
-----------------------------------------------
-EnchantCheckConstants.EXPANSIONS = {
-	DRAGONFLIGHT = 9,
-	THE_WAR_WITHIN = 10,
-	MIDNIGHT = 11,
 }
 
 ----------------------------------------------
@@ -320,74 +265,6 @@ EnchantCheckConstants.EQUIPMENT_SLOTS = {
 ----------------------------------------------
 -- Smart Notification System
 ----------------------------------------------
-
--- Role definitions based on spec
-EnchantCheckConstants.SPEC_ROLES = {
-	-- Death Knight
-	[250] = "TANK",    -- Blood
-	[251] = "MELEE",   -- Frost
-	[252] = "MELEE",   -- Unholy
-	
-	-- Demon Hunter  
-	[577] = "MELEE",   -- Havoc
-	[581] = "TANK",    -- Vengeance
-	
-	-- Druid
-	[102] = "RANGED",  -- Balance
-	[103] = "MELEE",   -- Feral
-	[104] = "TANK",    -- Guardian
-	[105] = "HEALER",  -- Restoration
-	
-	-- Evoker
-	[1467] = "RANGED", -- Devastation
-	[1468] = "HEALER", -- Preservation
-	[1473] = "RANGED", -- Augmentation
-	
-	-- Hunter
-	[253] = "RANGED",  -- Beast Mastery
-	[254] = "RANGED",  -- Marksmanship
-	[255] = "MELEE",   -- Survival
-	
-	-- Mage
-	[62] = "RANGED",   -- Arcane
-	[63] = "RANGED",   -- Fire
-	[64] = "RANGED",   -- Frost
-	
-	-- Monk
-	[268] = "TANK",    -- Brewmaster
-	[270] = "HEALER",  -- Mistweaver
-	[269] = "MELEE",   -- Windwalker
-	
-	-- Paladin
-	[65] = "HEALER",   -- Holy
-	[66] = "TANK",     -- Protection
-	[70] = "MELEE",    -- Retribution
-	
-	-- Priest
-	[256] = "HEALER",  -- Discipline
-	[257] = "HEALER",  -- Holy
-	[258] = "RANGED",  -- Shadow
-	
-	-- Rogue
-	[259] = "MELEE",   -- Assassination
-	[260] = "MELEE",   -- Outlaw
-	[261] = "MELEE",   -- Subtlety
-	
-	-- Shaman
-	[262] = "RANGED",  -- Elemental
-	[263] = "MELEE",   -- Enhancement
-	[264] = "HEALER",  -- Restoration
-	
-	-- Warlock
-	[265] = "RANGED",  -- Affliction
-	[266] = "RANGED",  -- Demonology
-	[267] = "RANGED",  -- Destruction
-	
-	-- Warrior
-	[71] = "MELEE",    -- Arms
-	[72] = "MELEE",    -- Fury
-	[73] = "TANK",     -- Protection
-}
 
 -- Content type detection
 EnchantCheckConstants.CONTENT_TYPES = {

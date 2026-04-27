@@ -9,32 +9,16 @@ EnchantCheck is a World of Warcraft addon that checks gear for missing enchantme
 ### Testing in WoW
 1. Place addon in `World of Warcraft/_retail_/Interface/AddOns/EnchantCheck/`
 2. Launch WoW or `/reload` in-game
-3. Test with `/enchantcheck check` or `/ec check`
+3. Run `/ec help` in-game for the current command list
 4. Monitor for Lua errors (use BugSack addon or `/console scriptErrors 1`)
 
-### Commands
-```
-/enchantcheck check    - Test gear checking logic
-/ec config             - View current settings
-/ec cache              - Check cache performance
-/ec fixhead            - Force re-check head enchant requirements
-```
-
 ### Publishing
-Releases are automated via GitHub Actions when you push a git tag:
 
-```bash
-git tag -a v11.2.7-1 -m "Release v11.2.7-1
-
-Changes:
-- Fixed XYZ"
-
-git push origin v11.2.7-1
-```
-
-GitHub Actions packages and uploads to CurseForge. Version convention: `v11.2.7-1` (WoW patch-addon revision)
+Releases are automated via GitHub Actions when you push a git tag matching `v<wow-patch>-<addon-revision>` (see `git log --oneline v*` for prior tags). GitHub Actions packages and uploads to CurseForge.
 
 **Setup (one-time):** Add `CF_API_KEY` to GitHub secrets. See PUBLISHING.md.
+
+**Before tagging:** ask the user whether this release is alpha/beta/stable.
 
 ## Manifest Validation
 
@@ -51,44 +35,25 @@ When adding/removing/renaming a `.lua` or `.xml`, update **both** `.toc` files.
 
 ## Initialization Order (Critical)
 
-WoW addons have strict global loading requirements:
+WoW addons have strict load-order constraints. File load order lives in the `.toc` files — check there for authoritative order. The invariant to preserve:
 
-1. **constants.lua** - Creates `_G.EnchantCheckConstants` immediately
-2. **modules/cache.lua** - Defines `EnchantCheckCache` in global scope
-3. **Locales/** - Loaded via locales.xml, creates translation tables
-4. **main.lua** - Creates addon, initializes all systems in `OnInitialize()`
+- `constants.lua` must load first and create `_G.EnchantCheckConstants` at file scope (not inside a function), because `main.lua` captures references to constants fields at file scope.
+- `Locales/locales.xml` must load before `main.lua` so the locale table exists when `main.lua` calls `GetLocale`.
 
-**Important**: constants.lua uses numeric slot indices (1-18) instead of WoW globals (INVSLOT_*) to avoid load-time dependency issues.
-
-## File Load Order (EnchantCheck.toc)
-
-```
-Libs/* (Ace3, LibStub, LibItemUpgradeInfo)
-constants.lua
-modules/cache.lua
-Locales/locales.xml
-main.lua
-```
+`constants.lua` uses numeric slot indices (1-18) instead of WoW globals (`INVSLOT_*`) to avoid load-time dependency issues — WoW's slot globals may not be defined yet when constants are evaluated.
 
 ## External Dependencies
 
-- **Ace3**: Core framework (event handling, DB, console, hooks)
-- **LibItemUpgradeInfo**: Accurate item level calculations
-- **LibBabble-Inventory**: Localized item slot names for weapon type detection
-
-## WoW API Compatibility
-
-- **Interface**: 110207 (WoW 11.2.7, The War Within)
-- **Max Level**: 80 (defined in EnchantCheckConstants.MAX_LEVEL)
-- Uses modern APIs, no Classic/TBC support
+- **Ace3** — core framework (addon skeleton, events, DB, console, hooks, timers)
+- **LibItemUpgradeInfo** — accurate item level calculations across upgrades
 
 ## Notes
 
-- ElvUI integration: Adjusts frame positioning when detected
-- No automated tests (WoW addons require manual in-game testing)
-- Debugging: Set `debugLevel` in DB or enable via slash commands
+- ElvUI integration: addon adjusts frame positioning when ElvUI is detected.
+- No automated tests — changes are validated manually in-game before commit.
+- Debugging: set `debugLevel` in the DB or toggle via slash commands.
 
 ## Reference Documentation
 
 For patterns and modifications, see:
-- [docs/patterns.md](./docs/patterns.md) - Lua patterns, WoW API, cache system, common modifications
+- [docs/patterns.md](./docs/patterns.md) - Lua patterns, WoW API, common modifications
