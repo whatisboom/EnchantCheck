@@ -679,7 +679,12 @@ function EnchantCheck:CreateSlotOverlay(slotFrame)
 		cfg.ICONS.LOW_ILVL,
 		cfg.ICONS.PURCHASEABLE_UPGRADE,
 	}
-	local tooltipKeys = {"MISSING_ENCHANT", "MISSING_GEM", "LOW_ILVL", "PURCHASEABLE_UPGRADE"}
+	local tooltipTexts = {
+		L["TOOLTIP_MISSING_ENCHANT"],
+		L["TOOLTIP_MISSING_GEM"],
+		L["TOOLTIP_LOW_ILVL"],
+		L["TOOLTIP_PURCHASEABLE_UPGRADE"],
+	}
 
 	overlay.icons = {}
 	for i, key in ipairs(iconKeys) do
@@ -692,7 +697,7 @@ function EnchantCheck:CreateSlotOverlay(slotFrame)
 		tex:SetTexture(iconTextures[i])
 		iconFrame.texture = tex
 
-		local tooltipText = cfg.TOOLTIPS[tooltipKeys[i]]
+		local tooltipText = tooltipTexts[i]
 		iconFrame:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 			GameTooltip:SetText(tooltipText, 1, 1, 1)
@@ -873,7 +878,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 
 	if doRescan then
 		if iter < self.db.profile.rescanCount then
-			local rescanMsg = string.format(L["RESCAN"] .. " (%d/%d items ready)", itemsReady, totalItems)
+			local rescanMsg = string.format("Re-scanning... (%d/%d items ready)", itemsReady, totalItems)
 			self:Debug(d_info, "%s", self:FormatMessage(rescanMsg, EnchantCheckConstants.UI.SEVERITY.WARNING))
 			for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 				local link = GetInventoryItemLink(unit, slot)
@@ -887,7 +892,7 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 			self:ScheduleTimer("CheckGear", 0.2, unit, items, iter+1)
 			return
 		else
-			local incompleteMsg = string.format(L["SCAN_INCOMPLETE"] .. " (%d/%d items ready)", itemsReady, totalItems)
+			local incompleteMsg = string.format(L["SCAN_INCOMPLETE"], itemsReady, totalItems)
 			self:Debug(d_warn, "%s", self:FormatMessage(incompleteMsg, EnchantCheckConstants.UI.SEVERITY.ERROR))
 			return
 		end
@@ -968,9 +973,8 @@ end
 -- UNIT_INVENTORY_CHANGED()
 ----------------------------------------------
 function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
-	if UnitIsUnit("player", unit) and PaperDollFrame and PaperDollFrame:IsVisible() then
-		self:CheckGear("player")
-	end
+	if unit ~= "player" then return end
+	self:CheckGear("player")
 end
 
 ----------------------------------------------

@@ -244,12 +244,6 @@ EnchantCheckConstants.OVERLAY = {
 		LOW_ILVL = "Interface\\Icons\\Spell_ChargeDown",
 		PURCHASEABLE_UPGRADE = "Interface\\Icons\\INV_Misc_Coin_01",
 	},
-	TOOLTIPS = {
-		MISSING_ENCHANT = "Missing enchant",
-		MISSING_GEM = "Missing gem",
-		LOW_ILVL = "Low item level",
-		PURCHASEABLE_UPGRADE = "Can add sockets",
-	},
 }
 
 ----------------------------------------------

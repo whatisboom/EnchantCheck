@@ -16,14 +16,17 @@ L["MISSING_ENCHANTS"] = "Missing enchants:"
 L["LOW_ITEM_LEVEL"] = "Low item level:"
 L["MISSING_BELT_BUCKLE"] = "Missing belt buckle?"
 L["MISSING_BS_SOCKETS"] = "Missing blacksmith sockets (?):"
-L["UPGRADEABLE_SOCKETS"] = "Could add sockets:"
+L["UPGRADEABLE_SOCKETS"] = "Can add socket:"
 
 L["PROPER_GEMS"] = "All sockets have gems."
 L["PROPER_ENCHANTS"] = "All items are enchanted."
 
-L["SCAN"] = "Scanning..."
-L["RESCAN"] = "Re-scanning..."
-L["SCAN_INCOMPLETE"] = "Scan incomplete, please try again later."
+L["SCAN_INCOMPLETE"] = "Scan incomplete (%d/%d items ready)"
+
+L["TOOLTIP_MISSING_ENCHANT"] = "Missing enchant"
+L["TOOLTIP_MISSING_GEM"] = "Missing gem"
+L["TOOLTIP_LOW_ILVL"] = "Low item level"
+L["TOOLTIP_PURCHASEABLE_UPGRADE"] = "Can add socket"
 
 L["INVSLOT_"..INVSLOT_HEAD] = "Head"
 L["INVSLOT_"..INVSLOT_NECK] = "Neck"
