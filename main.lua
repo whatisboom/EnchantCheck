@@ -11,7 +11,6 @@ local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
 ----------------------------------------------
 -- Other libs
 ----------------------------------------------
-local libItemUpgrade = LibStub("LibItemUpgradeInfo-1.0")
 
 ----------------------------------------------
 -- Constants-dependent locals (initialized in OnInitialize)
@@ -79,7 +78,7 @@ function EnchantCheck:ChatCommand(msg)
 	elseif args[1] == "reset" then
 		self:ResetConfig()
 	elseif args[1] == "check" then
-		self:CheckGear("player", nil, nil, true)
+		self:CheckGear("player", true)
 	else
 		self:Printf("|cffFFFF00Unknown command:|r '%s'. Type |cff00FF00/enchantcheck help|r for available commands.", args[1] or "")
 	end
@@ -93,7 +92,7 @@ function EnchantCheck:ShowHelp()
 	self:Printf("  |cffFFFF00/enchantcheck set <setting> <value>|cffFFFFFF - Change a setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck toggle <setting>|cffFFFFFF - Toggle a boolean setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck reset|cffFFFFFF - Reset all settings to defaults")
-	self:Printf("  |cff888888Examples: smartNotifications, minItemLevelForWarnings|cffFFFFFF")
+	self:Printf("  |cff888888Examples: smartNotifications, ignoreHeirlooms|cffFFFFFF")
 end
 
 ----------------------------------------------
@@ -111,10 +110,8 @@ function EnchantCheck:ShowConfig()
 	
 	-- Show all settings with nil handling
 	self:Printf("  Smart Notifications: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("smartNotifications") or "nil"))
-	self:Printf("  Min Item Level for Warnings: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("minItemLevelForWarnings") or "nil"))
 	self:Printf("  Ignore Heirlooms: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("ignoreHeirlooms") or "nil"))
 	self:Printf("  Enable Sounds: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableSounds") or "nil"))
-	self:Printf("  Suppress Leveling Warnings: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("suppressLevelingWarnings") or "nil"))
 end
 
 function EnchantCheck:SetConfigValue(setting, value)
@@ -201,7 +198,7 @@ end
 ----------------------------------------------
 function EnchantCheck:OnEnable()
 	self:RegisterEvent("INSPECT_READY");
-	self:RegisterEvent("UNIT_INVENTORY_CHANGED");
+	self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
@@ -213,7 +210,7 @@ end
 ----------------------------------------------
 function EnchantCheck:OnDisable()
 	self:UnregisterEvent("INSPECT_READY");
-	self:UnregisterEvent("UNIT_INVENTORY_CHANGED");
+	self:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED");
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	self:UnregisterEvent("PLAYER_LOGIN");
 
@@ -245,14 +242,30 @@ end
 ----------------------------------------------
 -- Item link functions
 ----------------------------------------------
-function EnchantCheck:GetActualItemLevel(link)
+-- For the player's own equipped gear, C_Item.GetCurrentItemLevel(ItemLocation)
+-- returns the same value as the character pane / tooltip — it reflects any
+-- scaling cap applied to the equipped instance. GetDetailedItemLevelInfo on the
+-- link can be wildly off for items with scaling bonus_ids (e.g. Legion Remix
+-- gear reporting 655 when the worn item is actually 102), so we only fall back
+-- to it for the inspect case where no ItemLocation is available.
+function EnchantCheck:GetActualItemLevel(unit, slot, link)
 	if not link or link == "" then
 		return 0
 	end
 
-	local itemLevel = libItemUpgrade:GetUpgradedItemLevel(link)
-	if itemLevel and itemLevel > 0 then
-		return itemLevel
+	if unit and slot and UnitIsUnit(unit, "player") then
+		local loc = ItemLocation:CreateFromEquipmentSlot(slot)
+		if loc and C_Item.DoesItemExist(loc) then
+			local lvl = C_Item.GetCurrentItemLevel(loc)
+			if lvl and lvl > 0 then
+				return lvl
+			end
+		end
+	end
+
+	local effective = GetDetailedItemLevelInfo(link)
+	if effective and effective > 0 then
+		return effective
 	end
 
 	local _, _, _, basicLevel = C_Item.GetItemInfo(link)
@@ -279,83 +292,12 @@ end
 ----------------------------------------------
 
 
-function EnchantCheck:DetectContentType(avgItemLevel)
-	local inInstance, instanceType = IsInInstance()
-	
-	-- Check if in specific content
-	if inInstance then
-		if instanceType == "party" then
-			local name, instanceType, difficultyID = GetInstanceInfo()
-			if difficultyID and difficultyID >= 23 then -- Mythic+ difficulties
-				return EnchantCheckConstants.CONTENT_TYPES.MYTHIC_PLUS
-			else
-				return EnchantCheckConstants.CONTENT_TYPES.DUNGEON
-			end
-		elseif instanceType == "raid" then
-			return EnchantCheckConstants.CONTENT_TYPES.RAID
-		elseif instanceType == "pvp" or instanceType == "arena" then
-			return EnchantCheckConstants.CONTENT_TYPES.PVP
-		end
-	end
-	
-	-- Check level and item level to determine content type
-	local playerLevel = UnitLevel("player")
-	if playerLevel < MAX_LEVEL then
-		return EnchantCheckConstants.CONTENT_TYPES.LEVELING
-	else
-		-- For max level players, be conservative about endgame classification
-		-- Only classify as endgame if significantly above the threshold
-		local endgameThreshold = EnchantCheckConstants.CONTENT_ILVL_REQUIREMENTS[EnchantCheckConstants.CONTENT_TYPES.ENDGAME]
-		if avgItemLevel >= endgameThreshold + 20 then -- 20 ilvl buffer
-			return EnchantCheckConstants.CONTENT_TYPES.ENDGAME
-		else
-			return EnchantCheckConstants.CONTENT_TYPES.LEVELING
-		end
-	end
-end
-
-function EnchantCheck:ShouldWarnAboutSlot(slot, contentType, avgItemLevel)
-	-- Check if smart notifications are enabled
-	if not self:GetSetting("smartNotifications") then
-		-- When smart notifications are disabled, fall back to basic slot checking
-		return CheckSlotEnchant[slot] or false
-	end
-	
-	-- Check if slot normally requires enchants first
-	if not CheckSlotEnchant[slot] then
-		return false
-	end
-	
-	-- Don't warn about enchants for low-level content if setting enabled
-	if self:GetSetting("suppressLevelingWarnings") then
-		if contentType == EnchantCheckConstants.CONTENT_TYPES.LEVELING then
-			if avgItemLevel < self:GetSetting("minItemLevelForWarnings") then
-				return false
-			end
-		end
-		-- Also suppress for ENDGAME content if item level is below warning threshold
-		if contentType == EnchantCheckConstants.CONTENT_TYPES.ENDGAME then
-			if avgItemLevel < self:GetSetting("minItemLevelForWarnings") then
-				return false
-			end
-		end
-	end
-	
-	-- Check content-specific settings
-	if contentType == EnchantCheckConstants.CONTENT_TYPES.DUNGEON and not self:GetSetting("enhancedDungeonChecks") then
-		return false
-	end
-	
-	-- For ENDGAME content, be more restrictive
-	if contentType == EnchantCheckConstants.CONTENT_TYPES.ENDGAME then
-		-- Only warn if we're clearly in endgame content (high item level)
-		local endgameThreshold = self:GetSetting("minItemLevelForWarnings") or 400
-		if avgItemLevel < endgameThreshold then
-			return false
-		end
-	end
-	
-	return true
+function EnchantCheck:ShouldWarnAboutSlot(slot, item)
+	if not CheckSlotEnchant[slot] then return false end
+	if not self:GetSetting("smartNotifications") then return true end
+	-- Epic+ only; heirlooms (7) cannot be enchanted.
+	local rarity = item.rarity or 0
+	return rarity >= 4 and rarity ~= 7
 end
 
 
@@ -389,13 +331,13 @@ end
 -- Helper Functions for CheckGear
 ----------------------------------------------
 
-function EnchantCheck:ProcessItemData(item, slot)
+function EnchantCheck:ProcessItemData(unit, item, slot)
 	local _, _, rarity = C_Item.GetItemInfo(item.link)
 	local enchant, gemCount = self:ParseEnchantAndGems(item.link)
 	item.rarity = rarity or 0
 	item.enchant = enchant
 	item.gems = gemCount
-	item.level = self:GetActualItemLevel(item.link) or 0
+	item.level = self:GetActualItemLevel(unit, slot, item.link) or 0
 
 	if item.level == 0 then
 		self:Debug(d_warn, "Item level is 0 for slot %d (%s)", slot, item.link)
@@ -427,18 +369,17 @@ function EnchantCheck:CheckMissingItems(items, twoHanded)
 	return missingItems, hasMissingItems
 end
 
-function EnchantCheck:CheckMissingEnchants(items, avgItemLevel, contentType)
+function EnchantCheck:CheckMissingEnchants(items)
 	local missingEnchants = {}
 	local hasMissingEnchants = false
-	
+
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = items[slot]
 		if item.link and (item.enchant == 0) then
-			-- Use smart notification system to determine if we should warn
-			if self:ShouldWarnAboutSlot(slot, contentType, avgItemLevel) then
+			if self:ShouldWarnAboutSlot(slot, item) then
 				local itemType = select(6, C_Item.GetItemInfo(item.link))
 
-				if not (libItemUpgrade:IsArtifact(item.link) or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
+				if not (item.rarity == EnchantCheckConstants.ITEM_LEVEL.ARTIFACT_RARITY or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
 					table.insert(missingEnchants, slot)
 					hasMissingEnchants = true
 				end
@@ -464,7 +405,7 @@ function EnchantCheck:CheckMissingGems(items)
 	return missingGems, hasMissingGems
 end
 
-function EnchantCheck:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
+function EnchantCheck:CheckPurchaseableUpgrades(items)
 	local upgradeableItems = {}
 	local hasUpgradeableItems = false
 
@@ -671,28 +612,27 @@ function EnchantCheck:CreateSlotOverlay(slotFrame)
 
 	overlay.borderEdges = edges
 
-	-- Create icon buttons (frames for tooltip support)
-	local iconKeys = {"missingEnchant", "missingGem", "lowIlvl", "purchaseableUpgrade"}
-	local iconTextures = {
-		cfg.ICONS.MISSING_ENCHANT,
-		cfg.ICONS.MISSING_GEM,
-		cfg.ICONS.LOW_ILVL,
-		cfg.ICONS.PURCHASEABLE_UPGRADE,
+	-- Each issue type owns one corner so position alone communicates type.
+	local iconSpecs = {
+		{ key = "missingEnchant",     texture = cfg.ICONS.MISSING_ENCHANT,     tooltip = L["TOOLTIP_MISSING_ENCHANT"],     point = "TOPLEFT",     x =  bs, y = -bs },
+		{ key = "missingGem",         texture = cfg.ICONS.MISSING_GEM,         tooltip = L["TOOLTIP_MISSING_GEM"],         point = "TOPRIGHT",    x = -bs, y = -bs },
+		{ key = "lowIlvl",            texture = cfg.ICONS.LOW_ILVL,            tooltip = L["TOOLTIP_LOW_ILVL"],            point = "BOTTOMLEFT",  x =  bs, y =  bs },
+		{ key = "purchaseableUpgrade",texture = cfg.ICONS.PURCHASEABLE_UPGRADE,tooltip = L["TOOLTIP_PURCHASEABLE_UPGRADE"],point = "BOTTOMRIGHT", x = -bs, y =  bs },
 	}
-	local tooltipKeys = {"MISSING_ENCHANT", "MISSING_GEM", "LOW_ILVL", "PURCHASEABLE_UPGRADE"}
 
 	overlay.icons = {}
-	for i, key in ipairs(iconKeys) do
+	for _, spec in ipairs(iconSpecs) do
 		local iconFrame = CreateFrame("Frame", nil, overlay)
 		iconFrame:SetSize(cfg.ICON_SIZE, cfg.ICON_SIZE)
 		iconFrame:SetFrameLevel(overlay:GetFrameLevel() + 1)
+		iconFrame:SetPoint(spec.point, overlay, spec.point, spec.x, spec.y)
 
 		local tex = iconFrame:CreateTexture(nil, "ARTWORK")
 		tex:SetAllPoints()
-		tex:SetTexture(iconTextures[i])
+		tex:SetTexture(spec.texture)
 		iconFrame.texture = tex
 
-		local tooltipText = cfg.TOOLTIPS[tooltipKeys[i]]
+		local tooltipText = spec.tooltip
 		iconFrame:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 			GameTooltip:SetText(tooltipText, 1, 1, 1)
@@ -703,7 +643,7 @@ function EnchantCheck:CreateSlotOverlay(slotFrame)
 		end)
 
 		iconFrame:Hide()
-		overlay.icons[key] = iconFrame
+		overlay.icons[spec.key] = iconFrame
 	end
 
 	overlay:Hide()
@@ -796,18 +736,10 @@ function EnchantCheck:UpdateSlotOverlays(prefix, results)
 				edge:SetColorTexture(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
 			end
 
-			-- Position and show relevant icons
-			local iconCount = 0
-			local iconKeys = {"lowIlvl", "missingEnchant", "missingGem", "purchaseableUpgrade"}
-			for _, key in ipairs(iconKeys) do
-				local icon = overlay.icons[key]
+			-- Each icon's position is fixed at creation; just toggle visibility.
+			for key, icon in pairs(overlay.icons) do
 				if issues[key] then
-					icon:ClearAllPoints()
-					icon:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT",
-						-(iconCount * (cfg.ICON_SIZE + cfg.ICON_PADDING)) - cfg.BORDER_SIZE,
-						cfg.BORDER_SIZE)
 					icon:Show()
-					iconCount = iconCount + 1
 				else
 					icon:Hide()
 				end
@@ -833,16 +765,49 @@ end
 ----------------------------------------------
 -- Gear Checking System
 ----------------------------------------------
-function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
-	local isInspect = not UnitIsUnit("player", unit)
-	items = items or {}
-	iter = iter or 0
+function EnchantCheck:CheckGear(unit, printWarnings)
+	local framePrefix = (unit == "player") and "Character" or "Inspect"
 
-	libItemUpgrade:CleanCache()
+	-- Generation token: a newer scan for this frame invalidates pending
+	-- ContinueOnItemLoad callbacks from older scans so stale data can't
+	-- overwrite fresh overlays.
+	self._scanGens = self._scanGens or {}
+	self._scanGens[framePrefix] = (self._scanGens[framePrefix] or 0) + 1
+	local gen = self._scanGens[framePrefix]
 
-	local itemsReady = 0
-	local totalItems = 0
-	local doRescan = false
+	local items = {}
+	local pending = 1  -- guard so we always finish even if all slots are cached
+
+	local function finish()
+		if self._scanGens[framePrefix] ~= gen then return end
+
+		-- Titan's Grip and dual-wield produce both slots occupied; a true 2H
+		-- always leaves offhand empty.
+		local twoHanded = items[EnchantCheckConstants.SLOT_IDS.MAINHAND].link ~= nil
+			and items[EnchantCheckConstants.SLOT_IDS.OFFHAND].link == nil
+
+		local avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems = self:CalculateItemLevels(items, twoHanded)
+
+		local results = {
+			avgItemLevel = avgItemLevel,
+			itemLevelMin = itemLevelMin,
+			itemLevelMax = itemLevelMax,
+			lowLevelItems = lowLevelItems,
+			missingItems = self:CheckMissingItems(items, twoHanded),
+			missingEnchants = self:CheckMissingEnchants(items),
+			missingGems = self:CheckMissingGems(items),
+			upgradeableItems = self:CheckPurchaseableUpgrades(items),
+		}
+
+		self:UpdateSlotOverlays(framePrefix, results)
+
+		if printWarnings then
+			local warnings = self:BuildChatWarnings(unit, results)
+			for _, warning in ipairs(warnings) do
+				self:Print(warning)
+			end
+		end
+	end
 
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = {
@@ -855,82 +820,34 @@ function EnchantCheck:CheckGear(unit, items, iter, printWarnings)
 		}
 		item.id = GetInventoryItemID(unit, slot)
 		item.link = GetInventoryItemLink(unit, slot)
+		items[slot] = item
 
 		if item.link then
-			totalItems = totalItems + 1
 			if C_Item.GetItemInfo(item.link) then
-				itemsReady = itemsReady + 1
-				self:ProcessItemData(item, slot)
+				self:ProcessItemData(unit, item, slot)
 			else
-				doRescan = true
-			end
-		elseif item.id then
-			doRescan = true
-		end
-
-		items[slot] = item
-	end
-
-	if doRescan then
-		if iter < self.db.profile.rescanCount then
-			local rescanMsg = string.format(L["RESCAN"] .. " (%d/%d items ready)", itemsReady, totalItems)
-			self:Debug(d_info, "%s", self:FormatMessage(rescanMsg, EnchantCheckConstants.UI.SEVERITY.WARNING))
-			for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
-				local link = GetInventoryItemLink(unit, slot)
-				if link and not C_Item.GetItemInfo(link) then
-					local itemID = GetItemInfoFromHyperlink(link)
-					if itemID then
-						C_Item.RequestLoadItemDataByID(itemID)
-					end
+				pending = pending + 1
+				local itemObj = Item:CreateFromEquipmentSlot(slot, unit)
+				if itemObj and not itemObj:IsItemEmpty() then
+					itemObj:ContinueOnItemLoad(function()
+						if self._scanGens[framePrefix] ~= gen then return end
+						-- Re-read the link in case the slot changed while we waited.
+						item.link = GetInventoryItemLink(unit, slot) or item.link
+						if item.link and C_Item.GetItemInfo(item.link) then
+							self:ProcessItemData(unit, item, slot)
+						end
+						pending = pending - 1
+						if pending == 0 then finish() end
+					end)
+				else
+					pending = pending - 1
 				end
 			end
-			self:ScheduleTimer("CheckGear", 0.2, unit, items, iter+1)
-			return
-		else
-			local incompleteMsg = string.format(L["SCAN_INCOMPLETE"] .. " (%d/%d items ready)", itemsReady, totalItems)
-			self:Debug(d_warn, "%s", self:FormatMessage(incompleteMsg, EnchantCheckConstants.UI.SEVERITY.ERROR))
-			return
 		end
 	end
 
-	-- Titan's Grip and dual-wield produce both slots occupied; a true 2H
-	-- always leaves offhand empty.
-	local twoHanded = items[EnchantCheckConstants.SLOT_IDS.MAINHAND].link ~= nil
-		and items[EnchantCheckConstants.SLOT_IDS.OFFHAND].link == nil
-
-	local avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems = self:CalculateItemLevels(items, twoHanded)
-	local contentType = self:DetectContentType(avgItemLevel)
-
-	local missingItems = self:CheckMissingItems(items, twoHanded)
-	local missingEnchants = self:CheckMissingEnchants(items, avgItemLevel, contentType)
-	local missingGems = self:CheckMissingGems(items)
-	local upgradeableItems = self:CheckPurchaseableUpgrades(items, avgItemLevel, contentType)
-
-	-- Build shared results table for overlays and warnings
-	local results = {
-		avgItemLevel = avgItemLevel,
-		itemLevelMin = itemLevelMin,
-		itemLevelMax = itemLevelMax,
-		lowLevelItems = lowLevelItems,
-		missingItems = missingItems,
-		missingEnchants = missingEnchants,
-		missingGems = missingGems,
-		upgradeableItems = upgradeableItems,
-	}
-
-	-- Determine which frame prefix to use for overlays
-	local framePrefix = isInspect and "Inspect" or "Character"
-
-	-- Update slot overlays
-	self:UpdateSlotOverlays(framePrefix, results)
-
-	-- Print warnings to chat if requested
-	if printWarnings then
-		local warnings = self:BuildChatWarnings(unit, results)
-		for _, warning in ipairs(warnings) do
-			self:Print(warning)
-		end
-	end
+	pending = pending - 1
+	if pending == 0 then finish() end
 end
 
 
@@ -965,12 +882,13 @@ function EnchantCheck:INSPECT_READY(event, guid)
 end
 
 ----------------------------------------------
--- UNIT_INVENTORY_CHANGED()
+-- PLAYER_EQUIPMENT_CHANGED()
 ----------------------------------------------
-function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
-	if UnitIsUnit("player", unit) and PaperDollFrame and PaperDollFrame:IsVisible() then
-		self:CheckGear("player")
-	end
+-- Fires after the slot has been updated, so GetInventoryItemLink reflects
+-- the newly-equipped item. UNIT_INVENTORY_CHANGED fires too early and would
+-- scan stale slot data.
+function EnchantCheck:PLAYER_EQUIPMENT_CHANGED(event, equipSlot, hasCurrent)
+	self:CheckGear("player")
 end
 
 ----------------------------------------------
@@ -990,7 +908,7 @@ end
 function EnchantCheck:PLAYER_ENTERING_WORLD(event)
 	local inInstance, instanceType = IsInInstance()
 	if inInstance and (instanceType ~= "none") and (UnitLevel("player") == MAX_LEVEL) then
-		self:CheckGear("player", nil, nil, true)
+		self:CheckGear("player", true)
 	end
 end
 

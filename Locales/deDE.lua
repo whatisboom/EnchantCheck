@@ -20,10 +20,6 @@ L["MISSING_BS_SOCKETS"] = "Fehlende Schmied-Sockel (?):"
 L["PROPER_GEMS"] = "Alle Sockel haben Edelsteine."
 L["PROPER_ENCHANTS"] = "Alle Gegenstände sind verzaubert."
 
-L["SCAN"] = "Scanne..."
-L["RESCAN"] = "Scanne erneut..."
-L["SCAN_INCOMPLETE"] = "Scan unvollständig, bitte versucht es später erneut."
-
 L["INVSLOT_"..INVSLOT_HEAD] = "Kopf"
 L["INVSLOT_"..INVSLOT_NECK] = "Hals"
 L["INVSLOT_"..INVSLOT_SHOULDER] = "Schultern"

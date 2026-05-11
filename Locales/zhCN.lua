@@ -20,10 +20,6 @@ L["MISSING_BS_SOCKETS"] = "缺少锻造插槽："
 L["PROPER_GEMS"] = "所有插槽均有宝石。"
 L["PROPER_ENCHANTS"] = "所有装备均已附魔。"
 
-L["SCAN"] = "扫描中"
-L["RESCAN"] = "再次扫描"
-L["SCAN_INCOMPLETE"] = "扫描未完成，请稍后再试。"
-
 L["INVSLOT_"..INVSLOT_HEAD] = "头部"
 L["INVSLOT_"..INVSLOT_NECK] = "颈部"
 L["INVSLOT_"..INVSLOT_SHOULDER] = "肩部"
