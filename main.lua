@@ -199,6 +199,7 @@ end
 function EnchantCheck:OnEnable()
 	self:RegisterEvent("INSPECT_READY");
 	self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
+	self:RegisterEvent("SOCKET_INFO_SUCCESS");
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
@@ -211,6 +212,7 @@ end
 function EnchantCheck:OnDisable()
 	self:UnregisterEvent("INSPECT_READY");
 	self:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED");
+	self:UnregisterEvent("SOCKET_INFO_SUCCESS");
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	self:UnregisterEvent("PLAYER_LOGIN");
 
@@ -888,6 +890,15 @@ end
 -- the newly-equipped item. UNIT_INVENTORY_CHANGED fires too early and would
 -- scan stale slot data.
 function EnchantCheck:PLAYER_EQUIPMENT_CHANGED(event, equipSlot, hasCurrent)
+	self:CheckGear("player")
+end
+
+----------------------------------------------
+-- SOCKET_INFO_SUCCESS()
+----------------------------------------------
+-- PLAYER_EQUIPMENT_CHANGED does not fire when a gem is socketed into an
+-- already-equipped item, so the missing-gem overlay needs its own trigger.
+function EnchantCheck:SOCKET_INFO_SUCCESS(event)
 	self:CheckGear("player")
 end
 
