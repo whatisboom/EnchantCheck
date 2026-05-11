@@ -16,9 +16,15 @@ L["MISSING_ENCHANTS"] = "Отсутствующие чары:"
 L["LOW_ITEM_LEVEL"] = "Низкий уровень предметов:"
 L["MISSING_BELT_BUCKLE"] = "Отсутствует поясная пряжка?"
 L["MISSING_BS_SOCKETS"] = "Отсутствующие кузнечные гнезда (?):"
+L["UPGRADEABLE_SOCKETS"] = "Можно добавить гнездо:"
 
 L["PROPER_GEMS"] = "Во всех гнездах есть камни."
 L["PROPER_ENCHANTS"] = "Все предметы зачарованы."
+
+L["TOOLTIP_MISSING_ENCHANT"] = "Отсутствующие чары"
+L["TOOLTIP_MISSING_GEM"] = "Отсутствующие камни"
+L["TOOLTIP_LOW_ILVL"] = "Низкий уровень предмета"
+L["TOOLTIP_PURCHASEABLE_UPGRADE"] = "Можно добавить гнездо"
 
 L["INVSLOT_"..INVSLOT_HEAD] = "Голова"
 L["INVSLOT_"..INVSLOT_NECK] = "Шея"
