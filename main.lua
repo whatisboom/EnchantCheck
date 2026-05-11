@@ -198,7 +198,7 @@ end
 ----------------------------------------------
 function EnchantCheck:OnEnable()
 	self:RegisterEvent("INSPECT_READY");
-	self:RegisterEvent("UNIT_INVENTORY_CHANGED");
+	self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
@@ -210,7 +210,7 @@ end
 ----------------------------------------------
 function EnchantCheck:OnDisable()
 	self:UnregisterEvent("INSPECT_READY");
-	self:UnregisterEvent("UNIT_INVENTORY_CHANGED");
+	self:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED");
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	self:UnregisterEvent("PLAYER_LOGIN");
 
@@ -882,10 +882,12 @@ function EnchantCheck:INSPECT_READY(event, guid)
 end
 
 ----------------------------------------------
--- UNIT_INVENTORY_CHANGED()
+-- PLAYER_EQUIPMENT_CHANGED()
 ----------------------------------------------
-function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
-	if unit ~= "player" then return end
+-- Fires after the slot has been updated, so GetInventoryItemLink reflects
+-- the newly-equipped item. UNIT_INVENTORY_CHANGED fires too early and would
+-- scan stale slot data.
+function EnchantCheck:PLAYER_EQUIPMENT_CHANGED(event, equipSlot, hasCurrent)
 	self:CheckGear("player")
 end
 
