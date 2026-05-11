@@ -898,8 +898,17 @@ end
 ----------------------------------------------
 -- PLAYER_EQUIPMENT_CHANGED does not fire when a gem is socketed into an
 -- already-equipped item, so the missing-gem overlay needs its own trigger.
+-- The event fires before WoW finishes updating the equipped item's link, so
+-- a small delay lets the slot/cache settle before we re-parse. The gen
+-- token in CheckGear absorbs any duplicates.
 function EnchantCheck:SOCKET_INFO_SUCCESS(event)
-	self:CheckGear("player")
+	if self.socketRescanTimer then
+		self:CancelTimer(self.socketRescanTimer)
+	end
+	self.socketRescanTimer = self:ScheduleTimer(function()
+		self.socketRescanTimer = nil
+		self:CheckGear("player")
+	end, 0.5)
 end
 
 ----------------------------------------------
