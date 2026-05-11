@@ -21,8 +21,6 @@ L["UPGRADEABLE_SOCKETS"] = "Can add socket:"
 L["PROPER_GEMS"] = "All sockets have gems."
 L["PROPER_ENCHANTS"] = "All items are enchanted."
 
-L["SCAN_INCOMPLETE"] = "Scan incomplete (%d/%d items ready)"
-
 L["TOOLTIP_MISSING_ENCHANT"] = "Missing enchant"
 L["TOOLTIP_MISSING_GEM"] = "Missing gem"
 L["TOOLTIP_LOW_ILVL"] = "Low item level"

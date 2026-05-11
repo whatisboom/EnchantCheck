@@ -131,27 +131,21 @@ EnchantCheckConstants.DEBUG_LEVELS = {
 EnchantCheckConstants.DEFAULTS = {
 	profile = {
 		enable = true,
-		rescanCount = 10,
 		debugLevel = EnchantCheckConstants.DEBUG_LEVELS.WARNING,
 		
 		-- Smart Notification Settings
 		smartNotifications = true,
-		minItemLevelForWarnings = 200,
 		ignoreHeirlooms = true,
-		
+
 		-- Warning Settings
 		warnMissingItems = true,
 		warnMissingEnchants = true,
 		warnMissingGems = true,
 		warnLowItemLevel = true,
 		warnPurchaseableUpgrades = true,
-		
+
 		-- Sound Settings
 		enableSounds = false,
-
-		-- Content-Specific Settings
-		suppressLevelingWarnings = true,
-		enhancedDungeonChecks = true,
 	},
 }
 
@@ -169,6 +163,7 @@ EnchantCheckConstants.DEFAULTS = {
 -- 7 = Heirloom (yellow-gold)
 EnchantCheckConstants.ITEM_LEVEL = {
 	LOW_THRESHOLD_MULTIPLIER = 0.8, -- Items below 80% of average are flagged as low
+	ARTIFACT_RARITY = 6, -- Legion artifact weapons (skip missing-enchant warning)
 	HEIRLOOM_RARITY = 7, -- Heirloom items (exempt from low level warnings)
 }
 
@@ -241,7 +236,7 @@ EnchantCheckConstants.OVERLAY = {
 	ICONS = {
 		MISSING_ENCHANT = "Interface\\Icons\\INV_Enchant_FormulaSuperior_01",
 		MISSING_GEM = "Interface\\Icons\\INV_Misc_Gem_01",
-		LOW_ILVL = "Interface\\Icons\\Spell_ChargeDown",
+		LOW_ILVL = "Interface\\Icons\\Misc_ArrowDown",
 		PURCHASEABLE_UPGRADE = "Interface\\Icons\\INV_Misc_Coin_01",
 	},
 }
@@ -254,37 +249,6 @@ EnchantCheckConstants.EQUIPMENT_SLOTS = {
 	TWO_HANDED_COUNT = 15, -- Total slots minus offhand when using 2H weapon
 	ONE_HANDED_COUNT = 16, -- Total slots when using 1H+offhand
 	EXCLUDED_FROM_ILVL = { 4, 19 }, -- BODY and TABARD slots excluded from item level calculations
-}
-
-----------------------------------------------
--- Smart Notification System
-----------------------------------------------
-
--- Content type detection
-EnchantCheckConstants.CONTENT_TYPES = {
-	LEVELING = "LEVELING",
-	DUNGEON = "DUNGEON", 
-	MYTHIC_PLUS = "MYTHIC_PLUS",
-	RAID = "RAID",
-	PVP = "PVP",
-	ENDGAME = "ENDGAME"
-}
-
-
--- Content-based item level requirements (Midnight Season 1, post-squish)
--- These thresholds determine when enchant/gem warnings are shown based on content type
--- LEVELING: 0 (relaxed - no ilvl requirement, suppress most warnings)
--- DUNGEON: 220 (Adventurer baseline)
--- MYTHIC_PLUS: 250 (Champion track / M+ entry)
--- RAID: 246 (Normal raid entry level)
--- PVP: 233 (Veteran baseline)
-EnchantCheckConstants.CONTENT_ILVL_REQUIREMENTS = {
-	[EnchantCheckConstants.CONTENT_TYPES.LEVELING] = 0,
-	[EnchantCheckConstants.CONTENT_TYPES.DUNGEON] = 220,
-	[EnchantCheckConstants.CONTENT_TYPES.MYTHIC_PLUS] = 250,
-	[EnchantCheckConstants.CONTENT_TYPES.RAID] = 246,
-	[EnchantCheckConstants.CONTENT_TYPES.PVP] = 233,
-	[EnchantCheckConstants.CONTENT_TYPES.ENDGAME] = 250
 }
 
 -- Constants are already globally available from line 7

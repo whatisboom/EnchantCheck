@@ -45,7 +45,6 @@ WoW addons have strict load-order constraints. File load order lives in the `.to
 ## External Dependencies
 
 - **Ace3** — core framework (addon skeleton, events, DB, console, hooks, timers)
-- **LibItemUpgradeInfo** — accurate item level calculations across upgrades
 
 ## Notes
 
