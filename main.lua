@@ -200,6 +200,7 @@ function EnchantCheck:OnEnable()
 	self:RegisterEvent("INSPECT_READY");
 	self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
 	self:RegisterEvent("SOCKET_INFO_SUCCESS");
+	self:RegisterEvent("UNIT_INVENTORY_CHANGED");
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
@@ -856,6 +857,23 @@ end
 
 
 ----------------------------------------------
+-- Debounce(key, delay, fn)
+----------------------------------------------
+-- Cancels any pending timer stored at self[key] and schedules fn to run
+-- after `delay` seconds, clearing the key when it fires. Used to coalesce
+-- bursty events (INSPECT_READY, SOCKET_INFO_SUCCESS, UNIT_INVENTORY_CHANGED)
+-- into a single deferred rescan.
+function EnchantCheck:Debounce(key, delay, fn)
+	if self[key] then
+		self:CancelTimer(self[key])
+	end
+	self[key] = self:ScheduleTimer(function()
+		self[key] = nil
+		fn()
+	end, delay)
+end
+
+----------------------------------------------
 -- INSPECT_READY()
 ----------------------------------------------
 function EnchantCheck:INSPECT_READY(event, guid)
@@ -865,21 +883,14 @@ function EnchantCheck:INSPECT_READY(event, guid)
 		self.inspectHideHooked = true
 	end
 
-	-- Debounce: INSPECT_READY fires multiple times as item data loads.
-	-- Cancel any pending check and schedule a new one after a short delay
-	-- so we only run once after all data is available.
-	if self.inspectCheckTimer then
-		self:CancelTimer(self.inspectCheckTimer)
-		self.inspectCheckTimer = nil
-	end
-
+	-- INSPECT_READY fires multiple times as item data loads; debounce so we
+	-- only run once after all data is available.
 	if InspectFrame and InspectFrame.unit then
 		local unit = InspectFrame.unit
-		self.inspectCheckTimer = self:ScheduleTimer(function()
-			self.inspectCheckTimer = nil
+		self:Debounce("inspectCheckTimer", 0.5, function()
 			self:CreateAllOverlays("Inspect")
 			self:CheckGear(unit)
-		end, 0.5)
+		end)
 	end
 end
 
@@ -902,13 +913,24 @@ end
 -- a small delay lets the slot/cache settle before we re-parse. The gen
 -- token in CheckGear absorbs any duplicates.
 function EnchantCheck:SOCKET_INFO_SUCCESS(event)
-	if self.socketRescanTimer then
-		self:CancelTimer(self.socketRescanTimer)
-	end
-	self.socketRescanTimer = self:ScheduleTimer(function()
-		self.socketRescanTimer = nil
+	self:Debounce("socketRescanTimer", 0.5, function()
 		self:CheckGear("player")
-	end, 0.5)
+	end)
+end
+
+----------------------------------------------
+-- UNIT_INVENTORY_CHANGED()
+----------------------------------------------
+-- Catches enchant application on equipped items (both first-time and
+-- replacement), which PLAYER_EQUIPMENT_CHANGED does not reliably fire for.
+-- The equipped item's link is briefly stale after this event (same caveat
+-- as SOCKET_INFO_SUCCESS), so we delay before re-parsing. The gen token in
+-- CheckGear absorbs duplicates from unrelated inventory churn.
+function EnchantCheck:UNIT_INVENTORY_CHANGED(event, unit)
+	if unit ~= "player" then return end
+	self:Debounce("inventoryRescanTimer", 0.5, function()
+		self:CheckGear("player")
+	end)
 end
 
 ----------------------------------------------
