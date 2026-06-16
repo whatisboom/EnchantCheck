@@ -13,11 +13,6 @@ EnchantCheckConstants.VERSION = "@project-version@"
 EnchantCheckConstants.AUTHORS = "whatisboom"
 
 ----------------------------------------------
--- Level Constants
-----------------------------------------------
-EnchantCheckConstants.MAX_LEVEL = 90 -- Current max level for automated self-checks
-
-----------------------------------------------
 -- Slot ID Constants
 -- Numeric slot indices matching WoW's INVSLOT_* globals
 -- Used throughout the addon for consistent slot referencing

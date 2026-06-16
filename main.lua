@@ -15,7 +15,6 @@ local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
 ----------------------------------------------
 -- Constants-dependent locals (initialized in OnInitialize)
 ----------------------------------------------
-local MAX_LEVEL
 local ClassColor
 local CheckSlotEnchant = EnchantCheckConstants.ENCHANT_SLOTS
 local CheckSlotMissing = EnchantCheckConstants.REQUIRED_SLOTS
@@ -163,7 +162,6 @@ end
 --- Init
 ----------------------------------------------
 function EnchantCheck:OnInitialize()
-	MAX_LEVEL = EnchantCheckConstants.MAX_LEVEL
 	ClassColor = EnchantCheckConstants.CLASS_COLORS
 	
 	-- Set version info
@@ -949,7 +947,7 @@ end
 ----------------------------------------------
 function EnchantCheck:PLAYER_ENTERING_WORLD(event)
 	local inInstance, instanceType = IsInInstance()
-	if inInstance and (instanceType ~= "none") and (UnitLevel("player") == MAX_LEVEL) then
+	if inInstance and (instanceType ~= "none") and (UnitLevel("player") == GetMaxLevelForPlayerExpansion()) then
 		self:CheckGear("player", true)
 	end
 end
