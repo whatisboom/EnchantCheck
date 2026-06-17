@@ -195,9 +195,10 @@ function EnchantCheck:OnItemTooltip(tooltip)
 	if not entries then return end
 
 	tooltip:AddLine(" ")
+	tooltip:AddLine(L["TOOLTIP_HEADER"], 1, 1, 1)
 	for _, entry in ipairs(entries) do
 		local rgb = SEVERITY_RGB[entry.severity] or SEVERITY_RGB[C.UI.SEVERITY.ERROR]
-		tooltip:AddLine(entry.text, rgb[1], rgb[2], rgb[3], true)
+		tooltip:AddLine("- " .. entry.text, rgb[1], rgb[2], rgb[3], true)
 	end
 end
 

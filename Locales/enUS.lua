@@ -25,6 +25,7 @@ L["TOOLTIP_MISSING_ENCHANT"] = "Missing enchant"
 L["TOOLTIP_MISSING_GEM"] = "Missing gem"
 L["TOOLTIP_LOW_ILVL"] = "Low item level"
 L["TOOLTIP_PURCHASEABLE_UPGRADE"] = "Can add socket"
+L["TOOLTIP_HEADER"] = "Issues with this item (Enchant Check):"
 
 L["WRONG_ARMOR_TYPE"] = "Wrong armor type:"
 L["WRONG_STATS"] = "Wrong stats for spec:"
