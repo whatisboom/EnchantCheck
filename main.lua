@@ -691,12 +691,48 @@ function EnchantCheck:CreateAllOverlays(prefix)
 end
 
 function EnchantCheck:ClearAllOverlays(prefix)
+	if self.slotIssueLines then self.slotIssueLines[prefix] = nil end
 	if not self.slotOverlays or not self.slotOverlays[prefix] then return end
 
 	for _, overlay in pairs(self.slotOverlays[prefix]) do
 		overlay:Hide()
 		for _, icon in pairs(overlay.icons) do
 			icon:Hide()
+		end
+	end
+end
+
+function EnchantCheck:BuildSlotIssueLines(prefix, results)
+	self.slotIssueLines = self.slotIssueLines or {}
+	local lines = {}
+	self.slotIssueLines[prefix] = lines
+
+	local SEV = EnchantCheckConstants.UI.SEVERITY
+	local function add(slot, text, severity)
+		lines[slot] = lines[slot] or {}
+		table.insert(lines[slot], { text = text, severity = severity })
+	end
+
+	if self:GetSetting("warnLowItemLevel") then
+		for _, d in ipairs(results.lowLevelItems) do add(d.slot, L["TOOLTIP_LOW_ILVL"], SEV.ERROR) end
+	end
+	if self:GetSetting("warnMissingEnchants") then
+		for _, slot in ipairs(results.missingEnchants) do add(slot, L["TOOLTIP_MISSING_ENCHANT"], SEV.ERROR) end
+	end
+	if self:GetSetting("warnMissingGems") then
+		for _, slot in ipairs(results.missingGems) do add(slot, L["TOOLTIP_MISSING_GEM"], SEV.ERROR) end
+	end
+	if self:GetSetting("warnPurchaseableUpgrades") then
+		for _, d in ipairs(results.upgradeableItems) do add(d.slot, L["TOOLTIP_PURCHASEABLE_UPGRADE"], SEV.WARNING) end
+	end
+	if self:GetSetting("warnWrongArmorType") then
+		for _, d in ipairs(results.wrongArmorType) do
+			add(d.slot, L["WRONG_ARMOR_TYPE"] .. " " .. d.reason, SEV.ERROR)
+		end
+	end
+	if self:GetSetting("warnWrongStats") then
+		for _, d in ipairs(results.wrongStats) do
+			add(d.slot, L["WRONG_STATS"] .. " " .. d.reason, SEV.ERROR)
 		end
 	end
 end
@@ -746,6 +782,20 @@ function EnchantCheck:UpdateSlotOverlays(prefix, results)
 		for _, itemData in ipairs(results.upgradeableItems) do
 			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
 			slotIssues[itemData.slot].purchaseableUpgrade = true
+		end
+	end
+
+	-- Wrong armor type / wrong stats (error severity; red border, no corner icon)
+	if #results.wrongArmorType > 0 and self:GetSetting("warnWrongArmorType") then
+		for _, data in ipairs(results.wrongArmorType) do
+			if not slotIssues[data.slot] then slotIssues[data.slot] = {} end
+			slotIssues[data.slot].hasError = true
+		end
+	end
+	if #results.wrongStats > 0 and self:GetSetting("warnWrongStats") then
+		for _, data in ipairs(results.wrongStats) do
+			if not slotIssues[data.slot] then slotIssues[data.slot] = {} end
+			slotIssues[data.slot].hasError = true
 		end
 	end
 
@@ -824,6 +874,7 @@ function EnchantCheck:CheckGear(unit, printWarnings)
 			wrongStats = self:CheckWrongStats(unit, items),
 		}
 
+		self:BuildSlotIssueLines(framePrefix, results)
 		self:UpdateSlotOverlays(framePrefix, results)
 
 		if printWarnings then
