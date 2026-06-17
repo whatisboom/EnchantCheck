@@ -1033,6 +1033,7 @@ end
 function EnchantCheck:PLAYER_LOGIN(event)
 	-- Create overlays and hook character frame for auto-check
 	self:CreateAllOverlays("Character")
+	self:RegisterTooltipHook()
 	if PaperDollFrame then
 		self:HookScript(PaperDollFrame, "OnShow", "OnCharacterFrameShow")
 	end

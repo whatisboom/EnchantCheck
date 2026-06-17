@@ -157,3 +157,58 @@ function EnchantCheck:CheckWrongStats(unit, items)
 
 	return out
 end
+
+----------------------------------------------
+-- Tooltip injection
+----------------------------------------------
+
+-- Tooltip RGB per severity (AddLine needs floats, not the chat color codes).
+local SEVERITY_RGB = {
+	[C.UI.SEVERITY.GOOD]    = { 0, 1, 0 },
+	[C.UI.SEVERITY.INFO]    = { 0, 1, 1 },
+	[C.UI.SEVERITY.WARNING] = { 1, 1, 0 },
+	[C.UI.SEVERITY.ERROR]   = { 1, 0, 0 },
+}
+
+function EnchantCheck:OnItemTooltip(tooltip)
+	if tooltip ~= GameTooltip then return end
+
+	local owner = tooltip:GetOwner()
+	if not owner or not owner.GetName then return end
+	local name = owner:GetName()
+	if not name then return end
+
+	local prefix
+	if name:find("^Character") then
+		prefix = "Character"
+	elseif name:find("^Inspect") then
+		prefix = "Inspect"
+	else
+		return
+	end
+
+	local slotId = owner.GetID and owner:GetID()
+	if not slotId or slotId == 0 then return end
+
+	local byPrefix = self.slotIssueLines and self.slotIssueLines[prefix]
+	local entries = byPrefix and byPrefix[slotId]
+	if not entries then return end
+
+	tooltip:AddLine(" ")
+	for _, entry in ipairs(entries) do
+		local rgb = SEVERITY_RGB[entry.severity] or SEVERITY_RGB[C.UI.SEVERITY.ERROR]
+		tooltip:AddLine(entry.text, rgb[1], rgb[2], rgb[3], true)
+	end
+end
+
+function EnchantCheck:RegisterTooltipHook()
+	if self.tooltipHooked then return end
+	if not (TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall
+		and Enum and Enum.TooltipDataType) then
+		return
+	end
+	TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
+		EnchantCheck:OnItemTooltip(tooltip)
+	end)
+	self.tooltipHooked = true
+end
