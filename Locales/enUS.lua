@@ -26,6 +26,11 @@ L["TOOLTIP_MISSING_GEM"] = "Missing gem"
 L["TOOLTIP_LOW_ILVL"] = "Low item level"
 L["TOOLTIP_PURCHASEABLE_UPGRADE"] = "Can add socket"
 
+L["WRONG_ARMOR_TYPE"] = "Wrong armor type:"
+L["WRONG_STATS"] = "Wrong stats for spec:"
+L["WRONG_ARMOR_TYPE_DETAIL"] = "%s (your class wears %s)"      -- have, want
+L["WRONG_STAT_DETAIL"] = "grants %s, your spec uses %s"        -- have, want
+
 L["INVSLOT_"..INVSLOT_HEAD] = "Head"
 L["INVSLOT_"..INVSLOT_NECK] = "Neck"
 L["INVSLOT_"..INVSLOT_SHOULDER] = "Shoulder"
