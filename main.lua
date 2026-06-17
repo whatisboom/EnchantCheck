@@ -346,6 +346,10 @@ function EnchantCheck:ProcessItemData(unit, item, slot)
 
 	item.stats = C_Item.GetItemStats(item.link) or {}
 
+	local _, _, _, _, _, classID, subclassID = C_Item.GetItemInfoInstant(item.link)
+	item.classID = classID
+	item.subclassID = subclassID
+
 	item.sockets = 0
 	for label in pairs(item.stats) do
 		if label:find("EMPTY_SOCKET_", 1, true) then
@@ -549,6 +553,24 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_ENCHANTS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
 		hasAnyIssues = true
+	end
+
+	-- Wrong armor type
+	if #results.wrongArmorType > 0 and self:GetSetting("warnWrongArmorType") then
+		for _, data in ipairs(results.wrongArmorType) do
+			local msg = L["WRONG_ARMOR_TYPE"] .. " " .. L["INVSLOT_"..data.slot] .. " — " .. data.reason
+			table.insert(warnings, self:FormatMessage(msg, EnchantCheckConstants.UI.SEVERITY.ERROR))
+			hasAnyIssues = true
+		end
+	end
+
+	-- Wrong stats for spec
+	if #results.wrongStats > 0 and self:GetSetting("warnWrongStats") then
+		for _, data in ipairs(results.wrongStats) do
+			local msg = L["WRONG_STATS"] .. " " .. L["INVSLOT_"..data.slot] .. " — " .. data.reason
+			table.insert(warnings, self:FormatMessage(msg, EnchantCheckConstants.UI.SEVERITY.ERROR))
+			hasAnyIssues = true
+		end
 	end
 
 	if not hasAnyIssues then
@@ -798,6 +820,8 @@ function EnchantCheck:CheckGear(unit, printWarnings)
 			missingEnchants = self:CheckMissingEnchants(items),
 			missingGems = self:CheckMissingGems(items),
 			upgradeableItems = self:CheckPurchaseableUpgrades(items),
+			wrongArmorType = self:CheckWrongArmorType(unit, items),
+			wrongStats = self:CheckWrongStats(unit, items),
 		}
 
 		self:UpdateSlotOverlays(framePrefix, results)
