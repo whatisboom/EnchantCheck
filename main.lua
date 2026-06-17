@@ -111,6 +111,8 @@ function EnchantCheck:ShowConfig()
 	self:Printf("  Smart Notifications: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("smartNotifications") or "nil"))
 	self:Printf("  Ignore Heirlooms: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("ignoreHeirlooms") or "nil"))
 	self:Printf("  Enable Sounds: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableSounds") or "nil"))
+	self:Printf("  Warn Wrong Armor Type: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("warnWrongArmorType")))
+	self:Printf("  Warn Wrong Stats: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("warnWrongStats")))
 end
 
 function EnchantCheck:SetConfigValue(setting, value)
