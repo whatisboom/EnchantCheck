@@ -26,3 +26,9 @@ pyvenv.cfg
 bin
 
 .claude/
+
+# Git worktrees
+.worktrees/
+
+# Local design docs / implementation plans (never committed)
+docs/superpowers/
