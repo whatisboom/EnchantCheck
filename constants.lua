@@ -138,6 +138,8 @@ EnchantCheckConstants.DEFAULTS = {
 		warnMissingGems = true,
 		warnLowItemLevel = true,
 		warnPurchaseableUpgrades = true,
+		warnWrongArmorType = true,
+		warnWrongStats = true,
 
 		-- Sound Settings
 		enableSounds = false,
@@ -245,5 +247,66 @@ EnchantCheckConstants.EQUIPMENT_SLOTS = {
 	ONE_HANDED_COUNT = 16, -- Total slots when using 1H+offhand
 	EXCLUDED_FROM_ILVL = { 4, 19 }, -- BODY and TABARD slots excluded from item level calculations
 }
+
+----------------------------------------------
+-- Item Classification IDs
+-- (mirrors Enum.ItemClass / Enum.ItemArmorSubclass; literals avoid load-order
+-- dependence on the Enum table, consistent with the numeric SLOT_IDS approach)
+----------------------------------------------
+EnchantCheckConstants.ITEM_CLASS = {
+	WEAPON = 2,
+	ARMOR = 4,
+}
+
+-- GetItemStats() table keys for each primary stat. The same identifiers are
+-- global localized strings (e.g. _G["ITEM_MOD_STRENGTH_SHORT"] == "Strength"),
+-- which we reuse as locale-correct tooltip search keywords.
+EnchantCheckConstants.PRIMARY_STAT_KEYS = {
+	[1] = "ITEM_MOD_STRENGTH_SHORT",
+	[2] = "ITEM_MOD_AGILITY_SHORT",
+	[4] = "ITEM_MOD_INTELLECT_SHORT",
+}
+
+-- Class token -> preferred armor subclass.
+EnchantCheckConstants.CLASS_ARMOR_TYPE = {
+	MAGE = 1, PRIEST = 1, WARLOCK = 1,                 -- Cloth
+	ROGUE = 2, DRUID = 2, MONK = 2, DEMONHUNTER = 2,   -- Leather
+	HUNTER = 3, SHAMAN = 3, EVOKER = 3,                -- Mail
+	WARRIOR = 4, PALADIN = 4, DEATHKNIGHT = 4,         -- Plate
+}
+
+-- Class token -> primary stat, for classes whose primary does NOT vary by spec.
+EnchantCheckConstants.CLASS_PRIMARY_STAT = {
+	WARRIOR = 1, PALADIN = 1, DEATHKNIGHT = 1,                  -- Strength
+	HUNTER = 2, ROGUE = 2, DEMONHUNTER = 2,                     -- Agility (DH Devourer overridden below)
+	MAGE = 4, PRIEST = 4, WARLOCK = 4, EVOKER = 4,              -- Intellect
+}
+
+-- Spec ID -> primary stat, for specs whose primary differs from their class's
+-- other specs (hybrid classes Druid/Monk/Shaman, plus the Demon Hunter Devourer
+-- spec). Takes precedence over CLASS_PRIMARY_STAT, so a class can keep its default
+-- in CLASS_PRIMARY_STAT and list only its divergent spec(s) here.
+-- Spec IDs verified against warcraft.wiki.gg/wiki/SpecializationID.
+EnchantCheckConstants.SPEC_PRIMARY_STAT = {
+	-- Druid
+	[102] = 4, -- Balance      (Intellect)
+	[103] = 2, -- Feral        (Agility)
+	[104] = 2, -- Guardian     (Agility)
+	[105] = 4, -- Restoration  (Intellect)
+	-- Monk
+	[268] = 2, -- Brewmaster   (Agility)
+	[269] = 2, -- Windwalker   (Agility)
+	[270] = 4, -- Mistweaver   (Intellect)
+	-- Shaman
+	[262] = 4, -- Elemental    (Intellect)
+	[263] = 2, -- Enhancement  (Agility)
+	[264] = 4, -- Restoration  (Intellect)
+	-- Demon Hunter (Havoc/Vengeance default to Agility via CLASS_PRIMARY_STAT)
+	[1480] = 4, -- Devourer     (Intellect, added in patch 12.0 Midnight)
+}
+
+-- Equipment slots that carry a class-relevant armor type. Excludes cloak (slot
+-- 15, always Cloth), neck/rings/trinkets (no armor type), shirt and tabard.
+EnchantCheckConstants.ARMOR_TYPE_SLOTS = { 1, 3, 5, 6, 7, 8, 9, 10 }
 
 -- Constants are already globally available from line 7

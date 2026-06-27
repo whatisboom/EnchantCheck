@@ -21,3 +21,4 @@ Libs\AceTimer-3.0\AceTimer-3.0.xml
 constants.lua
 Locales\locales.xml
 main.lua
+speccheck.lua
