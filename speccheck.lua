@@ -1,7 +1,12 @@
 ----------------------------------------------
 -- EnchantCheck — Class/Spec Gear Checks
 -- Detects gear that is wrong for the unit's class/spec: wrong armor type,
--- and wrong primary stat on weapons and trinkets (base stats + trinket procs).
+-- and wrong primary stat on weapons and trinkets. Primary stats are read from
+-- the unit-aware tooltip (active stat = normal/white line) rather than
+-- GetItemStats, which is not unit-aware and reports the wrong primary for
+-- inspected primary-stat-flexible gear. Proc/Use primaries are free-form text
+-- with no active/inactive coloring, so they are only judged on the player's own
+-- character (where the client renders the wearer's actual stat), never inspect.
 ----------------------------------------------
 local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
 local C = EnchantCheckConstants
@@ -12,15 +17,25 @@ local function PrimaryStatName(stat)
 	return (key and _G[key]) or tostring(stat)
 end
 
--- Which primary stat, if any, this item's base stat block carries.
-local function BasePrimaryStat(stats)
-	if not stats then return nil end
-	for stat, key in pairs(C.PRIMARY_STAT_KEYS) do
-		if stats[key] and stats[key] > 0 then
-			return stat
+-- "/"-joined localized names for a set of primary stat ids, in canonical
+-- Strength/Agility/Intellect order.
+local PRIMARY_STAT_ORDER = { 1, 2, 4 }
+local function PrimaryStatNames(set)
+	local names = {}
+	for _, stat in ipairs(PRIMARY_STAT_ORDER) do
+		if set[stat] then
+			names[#names + 1] = PrimaryStatName(stat)
 		end
 	end
-	return nil
+	return table.concat(names, "/")
+end
+
+-- True if a tooltip line color is the normal/white of an active stat line.
+-- On primary-stat-flexible gear the wearer's stat renders white while the
+-- others are greyed (~0.5); proc/Use text renders green (r≈0). Requiring all
+-- three components near 1 keeps only active itemized stat lines.
+local function IsActiveLineColor(c)
+	return c and c.r and c.r > 0.8 and c.g > 0.8 and c.b > 0.8
 end
 
 ----------------------------------------------
@@ -82,9 +97,34 @@ function EnchantCheck:CheckWrongArmorType(unit, items)
 	return out
 end
 
--- Scans a trinket's tooltip for a primary stat that isn't the spec's. Returns
--- the wrong stat id when a wrong primary appears and the correct one does not,
--- else nil. Catches proc/on-use stats that aren't in the base stat block.
+-- Primary stats the wearer actually receives from the item in `slot`, read from
+-- the unit-aware tooltip. Only active (white) stat lines count, so the greyed
+-- inactive options on primary-stat-flexible gear are ignored and proc/Use text
+-- (green) never matches. Returns a set { [statId] = true, ... } or nil.
+function EnchantCheck:ActivePrimaryStats(unit, slot)
+	if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then return nil end
+	local data = C_TooltipInfo.GetInventoryItem(unit, slot)
+	if not data or not data.lines then return nil end
+
+	local set
+	for _, line in ipairs(data.lines) do
+		if line.leftText and IsActiveLineColor(line.leftColor) then
+			for stat, key in pairs(C.PRIMARY_STAT_KEYS) do
+				local name = _G[key]
+				if name and line.leftText:find(name, 1, true) then
+					set = set or {}
+					set[stat] = true
+				end
+			end
+		end
+	end
+	return set
+end
+
+-- Scans a trinket's tooltip for a proc/Use primary stat that isn't the spec's.
+-- Returns the wrong stat id when a wrong primary appears and the correct one does
+-- not, else nil. Proc text is free-form and not reliably re-rendered for an
+-- inspected unit's spec, so callers only use this on the player's own character.
 function EnchantCheck:TrinketProcWrongPrimary(unit, slot, primaryStat)
 	if not C_TooltipInfo or not C_TooltipInfo.GetInventoryItem then return nil end
 	local data = C_TooltipInfo.GetInventoryItem(unit, slot)
@@ -122,35 +162,44 @@ function EnchantCheck:CheckWrongStats(unit, items)
 	if not primaryStat then return out end
 
 	local SLOT = C.SLOT_IDS
+	local isPlayer = UnitIsUnit(unit, "player")
 
-	-- Weapons: base stat block only.
+	-- An item is wrong only when it grants the wearer an active primary stat and
+	-- none of those active stats is the spec's. Flexible gear stays correct as
+	-- long as the spec's stat is the active (white) one for this unit.
+	local function flag(slot, wrongNames)
+		out[#out + 1] = {
+			slot = slot,
+			reason = string.format(L["WRONG_STAT_DETAIL"], wrongNames, PrimaryStatName(primaryStat)),
+		}
+	end
+
+	-- Weapons: itemized primary only (true weapons, not shields/held off-hands).
 	for _, slot in ipairs({ SLOT.MAINHAND, SLOT.OFFHAND }) do
 		local item = items[slot]
 		if item and item.link and item.classID == C.ITEM_CLASS.WEAPON then
-			local base = BasePrimaryStat(item.stats)
-			if base and base ~= primaryStat then
-				out[#out + 1] = {
-					slot = slot,
-					reason = string.format(L["WRONG_STAT_DETAIL"], PrimaryStatName(base), PrimaryStatName(primaryStat)),
-				}
+			local active = self:ActivePrimaryStats(unit, slot)
+			if active and not active[primaryStat] then
+				flag(slot, PrimaryStatNames(active))
 			end
 		end
 	end
 
-	-- Trinkets: base stat block, then proc/on-use tooltip scan.
+	-- Trinkets: itemized primary first; for the player only, fall back to the
+	-- proc/Use scan when the trinket has no itemized primary at all.
 	for _, slot in ipairs({ SLOT.TRINKET1, SLOT.TRINKET2 }) do
 		local item = items[slot]
 		if item and item.link then
-			local base = BasePrimaryStat(item.stats)
-			local wrong = (base and base ~= primaryStat) and base or nil
-			if not wrong then
-				wrong = self:TrinketProcWrongPrimary(unit, slot, primaryStat)
-			end
-			if wrong then
-				out[#out + 1] = {
-					slot = slot,
-					reason = string.format(L["WRONG_STAT_DETAIL"], PrimaryStatName(wrong), PrimaryStatName(primaryStat)),
-				}
+			local active = self:ActivePrimaryStats(unit, slot)
+			if active then
+				if not active[primaryStat] then
+					flag(slot, PrimaryStatNames(active))
+				end
+			elseif isPlayer then
+				local wrong = self:TrinketProcWrongPrimary(unit, slot, primaryStat)
+				if wrong then
+					flag(slot, PrimaryStatName(wrong))
+				end
 			end
 		end
 	end
