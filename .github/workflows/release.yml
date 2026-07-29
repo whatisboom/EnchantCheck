@@ -1,31 +1,48 @@
-name: Package and Release
+name: Release
 
 on:
   push:
     tags:
-      - '**'
+      - 'v*'
 
-env:
-  CF_API_KEY: ${{ secrets.CF_API_KEY }}
-  WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
-  WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
-  GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+permissions:
+  contents: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout repository
+      - name: Clone project
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fetch all tags
-        run: git fetch --tags --force
 
       - name: Package and release
         uses: BigWigsMods/packager@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+
+      - name: Announce release on Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          # Pull just this version's section out of CHANGELOG.md (Keep a
+          # Changelog format: "## [X.Y.Z]" heading up to the next "## [" heading).
+          NOTES=$(awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' -e ':a' -e '/^\n*$/{$d;N;ba' -e '}')
+
+          if [ -z "$NOTES" ]; then
+            NOTES="_(no changelog entry found for ${GITHUB_REF_NAME})_"
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg title "EnchantCheck ${GITHUB_REF_NAME} released" \
+            --arg desc "$NOTES" \
+            --arg url "https://www.curseforge.com/wow/addons/enchant-check-updated" \
+            '{embeds: [{title: $title, description: $desc, url: $url, color: 5814783}]}')
+
+          curl -sf -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"

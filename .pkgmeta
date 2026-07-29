@@ -1,5 +1,7 @@
 package-as: EnchantCheck
 
+manual-changelog: CHANGELOG.md
+
 license-output: LICENSE
 
 enable-nolib-creation: yes
