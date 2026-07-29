@@ -20,19 +20,9 @@ local CheckSlotEnchant = EnchantCheckConstants.ENCHANT_SLOTS
 local CheckSlotMissing = EnchantCheckConstants.REQUIRED_SLOTS
 
 ----------------------------------------------
--- Config options and debug levels (initialized in OnInitialize)
+-- BoomForge logger (assigned in OnInitialize)
 ----------------------------------------------
--- These will be set in OnInitialize to ensure proper loading order
-local d_warn, d_info, d_notice, debugLevel
-
-----------------------------------------------
--- Print debug message
-----------------------------------------------
-function EnchantCheck:Debug(level, msg, ...)
-	if debugLevel and level and (level <= debugLevel) then
-		self:Printf(msg, ...)
-	end
-end
+local log
 
 ----------------------------------------------
 -- Configuration Management
@@ -172,15 +162,17 @@ function EnchantCheck:OnInitialize()
 	
 	-- Set defaults
 	EnchantCheck.defaults = EnchantCheckConstants.DEFAULTS
-	
-	-- Initialize debug levels
-	d_warn = EnchantCheckConstants.DEBUG_LEVELS.WARNING
-	d_info = EnchantCheckConstants.DEBUG_LEVELS.INFO
-	d_notice = EnchantCheckConstants.DEBUG_LEVELS.NOTICE
-	debugLevel = d_warn
-	
+
 	-- Initialize database
 	self.db = LibStub("AceDB-3.0"):New("EnchantCheckDB", EnchantCheck.defaults, "profile")
+
+	-- Register with BoomForge; entry.services.log reads its level from our own profile
+	local entry = BoomForge:RegisterPlugin(self, {
+		name = "EnchantCheck",
+		version = EnchantCheck.version,
+		getLevel = function() return EnchantCheck.db.profile.debugLevel end,
+	})
+	log = entry.services.log
 
 	-- Register console commands
 	self:RegisterChatCommand("enchantcheck", "ChatCommand")
@@ -190,7 +182,7 @@ function EnchantCheck:OnInitialize()
 		self:Enable();
 	end
 
-	self:Debug(d_notice, L["LOADED"]);
+	log:Notice(L["LOADED"]);
 end
 
 ----------------------------------------------
@@ -204,7 +196,7 @@ function EnchantCheck:OnEnable()
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("PLAYER_LOGIN");
 
-	self:Debug(d_notice, L["ENABLED"]);
+	log:Notice(L["ENABLED"]);
 end
 
 ----------------------------------------------
@@ -223,7 +215,7 @@ function EnchantCheck:OnDisable()
 	self:ClearAllOverlays("Character")
 	self:ClearAllOverlays("Inspect")
 
-	self:Debug(d_notice, L["DISABLED"]);
+	log:Notice(L["DISABLED"]);
 end
 
 ----------------------------------------------
@@ -343,7 +335,7 @@ function EnchantCheck:ProcessItemData(unit, item, slot)
 	item.level = self:GetActualItemLevel(unit, slot, item.link) or 0
 
 	if item.level == 0 then
-		self:Debug(d_warn, "Item level is 0 for slot %d (%s)", slot, item.link)
+		log:Warning("Item level is 0 for slot %d (%s)", slot, item.link)
 	end
 
 	item.stats = C_Item.GetItemStats(item.link) or {}
