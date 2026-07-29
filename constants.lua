@@ -121,28 +121,69 @@ EnchantCheckConstants.DEBUG_LEVELS = {
 }
 
 ----------------------------------------------
+-- Enchant Tiers - which slots carry real player power ("primary")
+-- vs. only tertiary stats like leech/avoidance/speed ("secondary")?
+-- Covers exactly the slots that are `true` in ENCHANT_SLOTS above.
+----------------------------------------------
+EnchantCheckConstants.ENCHANT_TIER = {
+	[1] = "SECONDARY",  -- HEAD
+	[3] = "SECONDARY",  -- SHOULDER
+	[5] = "PRIMARY",    -- CHEST
+	[7] = "PRIMARY",    -- LEGS
+	[8] = "SECONDARY",  -- FEET
+	[11] = "PRIMARY",   -- FINGER1
+	[12] = "PRIMARY",   -- FINGER2
+	[16] = "PRIMARY",   -- MAINHAND
+	[17] = "PRIMARY",   -- OFFHAND
+}
+
+----------------------------------------------
+-- Severity enum for per-tier warning configuration
+----------------------------------------------
+EnchantCheckConstants.SEVERITY_LEVELS = { "off", "warning", "error" }
+
+-- Settings whose values must be validated against one of the enums above
+-- (used by SetConfigValue to reject invalid /ec set input).
+EnchantCheckConstants.ENUM_SETTINGS = {
+	primaryEnchantSeverity = EnchantCheckConstants.SEVERITY_LEVELS,
+	secondaryEnchantSeverity = EnchantCheckConstants.SEVERITY_LEVELS,
+	socketUpgradeSeverity = EnchantCheckConstants.SEVERITY_LEVELS,
+}
+
+----------------------------------------------
 -- Default Configuration
 ----------------------------------------------
 EnchantCheckConstants.DEFAULTS = {
 	profile = {
 		enable = true,
 		debugLevel = EnchantCheckConstants.DEBUG_LEVELS.WARNING,
-		
+
 		-- Smart Notification Settings
 		smartNotifications = true,
 		ignoreHeirlooms = true,
 
 		-- Warning Settings
 		warnMissingItems = true,
-		warnMissingEnchants = true,
 		warnMissingGems = true,
 		warnLowItemLevel = true,
-		warnPurchaseableUpgrades = true,
 		warnWrongArmorType = true,
 		warnWrongStats = true,
 
+		-- Enchant tier severity (replaces the old flat warnMissingEnchants)
+		primaryEnchantSeverity = "error",
+		primaryEnchantIconOnly = false,
+		secondaryEnchantSeverity = "warning",
+		secondaryEnchantIconOnly = false,
+
+		-- Socket upgrade severity (replaces the old flat warnPurchaseableUpgrades)
+		socketUpgradeSeverity = "warning",
+		socketUpgradeIconOnly = false,
+
 		-- Sound Settings
 		enableSounds = false,
+		soundId = "None", -- LibSharedMedia "sound" key; "None" is a sentinel that
+		                   -- never resolves via LSM:Fetch, so nothing plays until
+		                   -- a real sound is picked.
 	},
 }
 

@@ -206,7 +206,7 @@ The old `publish.sh` and `publish-simple.sh` scripts have been deprecated in fav
 - ✓ Automated changelog generation
 - ✓ Industry-standard tooling
 
-Old scripts are kept in the repository for reference but should not be used for new releases.
+The old scripts have been removed; see git history if you need to reference them.
 
 ## Additional Resources
 

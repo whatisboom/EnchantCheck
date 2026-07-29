@@ -1,14 +1,13 @@
 package-as: EnchantCheck
 
-license-output: LICENSE
+manual-changelog: CHANGELOG.md
 
-enable-nolib-creation: yes
+license-output: LICENSE
 
 ignore:
   - "*.sh"
   - .release
   - .github
-  - deprecated
   - README.md
   - CLAUDE.md
   - PUBLISHING.md
@@ -19,9 +18,3 @@ ignore:
   - .gitignore
   - .gitattributes
   - .editorconfig
-  - Libs/**/README*
-  - Libs/**/CHANGELOG*
-  - Libs/**/*.md
-  - Libs/**/docs
-  - Libs/**/examples
-  - Libs/**/tests

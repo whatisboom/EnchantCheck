@@ -85,7 +85,8 @@ function EnchantCheck:CheckWrongArmorType(unit, items)
 	for _, slot in ipairs(C.ARMOR_TYPE_SLOTS) do
 		local item = items[slot]
 		if item and item.link and item.classID == C.ITEM_CLASS.ARMOR
-			and item.subclassID and item.subclassID ~= want then
+			and item.subclassID and item.subclassID ~= want
+			and self:ShouldWarnAboutItem(unit, item) then
 			local haveName = C_Item.GetItemSubClassInfo(C.ITEM_CLASS.ARMOR, item.subclassID)
 			local wantName = C_Item.GetItemSubClassInfo(C.ITEM_CLASS.ARMOR, want)
 			out[#out + 1] = {
@@ -177,7 +178,7 @@ function EnchantCheck:CheckWrongStats(unit, items)
 	-- Weapons: itemized primary only (true weapons, not shields/held off-hands).
 	for _, slot in ipairs({ SLOT.MAINHAND, SLOT.OFFHAND }) do
 		local item = items[slot]
-		if item and item.link and item.classID == C.ITEM_CLASS.WEAPON then
+		if item and item.link and item.classID == C.ITEM_CLASS.WEAPON and self:ShouldWarnAboutItem(unit, item) then
 			local active = self:ActivePrimaryStats(unit, slot)
 			if active and not active[primaryStat] then
 				flag(slot, PrimaryStatNames(active))
@@ -189,7 +190,7 @@ function EnchantCheck:CheckWrongStats(unit, items)
 	-- proc/Use scan when the trinket has no itemized primary at all.
 	for _, slot in ipairs({ SLOT.TRINKET1, SLOT.TRINKET2 }) do
 		local item = items[slot]
-		if item and item.link then
+		if item and item.link and self:ShouldWarnAboutItem(unit, item) then
 			local active = self:ActivePrimaryStats(unit, slot)
 			if active then
 				if not active[primaryStat] then
