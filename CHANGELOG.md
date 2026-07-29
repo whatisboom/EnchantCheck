@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.0.7-3-beta]
+
+### Added
+- Full settings panel (`/ec` or `/ec config`, or via Interface > AddOns > EnchantCheck) replacing the old slash-command-only config surface.
+- Independently configurable severity (Off/Warning/Error) and display (Icon Only) for Primary enchant slots (Weapon/Chest/Legs/Rings), Secondary enchant slots (Head/Shoulder/Feet), and socket-upgrade warnings.
+- Sound picker (with Preview) backed by LibSharedMedia, replacing the old hardcoded alert sound.
+
+### Changed
+- Smart Notifications now gates every warning type (not just missing enchants) behind max level + Epic+ rarity, so leveling gear doesn't generate noise across the board.
+- `/ec set`/`/ec toggle`/`/ec reset` stay in sync with an open settings panel.
+
+### Fixed
+- Settings now actually persist across `/reload` and logout (the `.toc` files never declared `SavedVariables` before this release).
+
 ## [12.0.7-2]
 
 ### Added
@@ -26,5 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full slash-command config system: `/ec config`, `/ec set <setting> <value>`, `/ec toggle <setting>`, `/ec reset`.
 - Localized into English, German, Russian, Simplified Chinese, and Traditional Chinese.
 
-[Unreleased]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-2...HEAD
+[Unreleased]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-3-beta...HEAD
+[12.0.7-3-beta]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-2...v12.0.7-3-beta
 [12.0.7-2]: https://github.com/whatisboom/EnchantCheck/releases/tag/v12.0.7-2
