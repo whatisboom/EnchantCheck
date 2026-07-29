@@ -11,6 +11,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
 ----------------------------------------------
 -- Other libs
 ----------------------------------------------
+local LSM = LibStub("LibSharedMedia-3.0")
 
 ----------------------------------------------
 -- Constants-dependent locals (initialized in OnInitialize)
@@ -288,11 +289,16 @@ end
 -- Smart Notification System
 ----------------------------------------------
 
-
-function EnchantCheck:ShouldWarnAboutSlot(slot, item)
-	if not CheckSlotEnchant[slot] then return false end
+-- Gates every warning type behind two conditions when Smart Notifications is
+-- on: the checked unit must be at max level, and (if an item is given) it
+-- must be Epic quality or better. `item` is nil for empty-slot checks (no
+-- item to rate), in which case only the level check applies. Heirlooms (7)
+-- never pass even though their rarity value is high, since they're leveling
+-- gear by definition.
+function EnchantCheck:ShouldWarnAboutItem(unit, item)
 	if not self:GetSetting("smartNotifications") then return true end
-	-- Epic+ only; heirlooms (7) cannot be enchanted.
+	if UnitLevel(unit) ~= GetMaxLevelForPlayerExpansion() then return false end
+	if not item then return true end
 	local rarity = item.rarity or 0
 	return rarity >= 4 and rarity ~= 7
 end
@@ -328,8 +334,11 @@ function EnchantCheck:PlayNotificationSound()
 	if not self:GetSetting("enableSounds") then
 		return
 	end
-	
-	PlaySound(SOUNDKIT.ALARM_CLOCK_WARNING_3, self:GetSetting("soundChannel"))
+
+	local path = LSM:Fetch(LSM.MediaType.SOUND, self:GetSetting("soundId"))
+	if path then
+		PlaySoundFile(path, "Master")
+	end
 end
 
 ----------------------------------------------
@@ -362,13 +371,13 @@ function EnchantCheck:ProcessItemData(unit, item, slot)
 	end
 end
 
-function EnchantCheck:CheckMissingItems(items, twoHanded)
+function EnchantCheck:CheckMissingItems(items, twoHanded, unit)
 	local missingItems = {}
 	local hasMissingItems = false
-	
+
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		if not items[slot].link and not items[slot].id then
-			if CheckSlotMissing[slot] and ((slot ~= EnchantCheckConstants.SLOT_IDS.OFFHAND) or not twoHanded) then
+			if CheckSlotMissing[slot] and ((slot ~= EnchantCheckConstants.SLOT_IDS.OFFHAND) or not twoHanded) and self:ShouldWarnAboutItem(unit, nil) then
 				table.insert(missingItems, slot)
 				hasMissingItems = true
 			end
@@ -392,7 +401,7 @@ function EnchantCheck:EnchantSeverityForSlot(slot)
 	return "off"
 end
 
-function EnchantCheck:CheckMissingEnchants(items)
+function EnchantCheck:CheckMissingEnchants(items, unit)
 	local missingEnchants = {}
 	local hasMissingEnchants = false
 
@@ -400,7 +409,7 @@ function EnchantCheck:CheckMissingEnchants(items)
 		local item = items[slot]
 		if item.link and (item.enchant == 0) then
 			local severity = self:EnchantSeverityForSlot(slot)
-			if severity ~= "off" and self:ShouldWarnAboutSlot(slot, item) then
+			if severity ~= "off" and CheckSlotEnchant[slot] and self:ShouldWarnAboutItem(unit, item) then
 				local itemType = select(6, C_Item.GetItemInfo(item.link))
 
 				if not (item.rarity == EnchantCheckConstants.ITEM_LEVEL.ARTIFACT_RARITY or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
@@ -414,13 +423,13 @@ function EnchantCheck:CheckMissingEnchants(items)
 	return missingEnchants, hasMissingEnchants
 end
 
-function EnchantCheck:CheckMissingGems(items)
+function EnchantCheck:CheckMissingGems(items, unit)
 	local missingGems = {}
 	local hasMissingGems = false
 
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = items[slot]
-		if item.link and item.gems < item.sockets then
+		if item.link and item.gems < item.sockets and self:ShouldWarnAboutItem(unit, item) then
 			table.insert(missingGems, slot)
 			hasMissingGems = true
 		end
@@ -429,7 +438,7 @@ function EnchantCheck:CheckMissingGems(items)
 	return missingGems, hasMissingGems
 end
 
-function EnchantCheck:CheckPurchaseableUpgrades(items)
+function EnchantCheck:CheckPurchaseableUpgrades(items, unit)
 	local upgradeableItems = {}
 	local hasUpgradeableItems = false
 
@@ -441,7 +450,7 @@ function EnchantCheck:CheckPurchaseableUpgrades(items)
 	-- Check each slot that can have a socket added via Jewelbinder
 	for _, slot in ipairs(EnchantCheckConstants.SOCKET_UPGRADES.UPGRADEABLE_SLOTS) do
 		local item = items[slot]
-		if item.link then
+		if item.link and self:ShouldWarnAboutItem(unit, item) then
 			local totalSockets = item.gems + item.sockets
 			if totalSockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS then
 				local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS - totalSockets
@@ -454,7 +463,7 @@ function EnchantCheck:CheckPurchaseableUpgrades(items)
 	return upgradeableItems, hasUpgradeableItems
 end
 
-function EnchantCheck:CalculateItemLevels(items, twoHanded)
+function EnchantCheck:CalculateItemLevels(items, twoHanded, unit)
 	local itemLevelMin = 0
 	local itemLevelMax = 0
 	local itemLevelSum = 0
@@ -494,8 +503,9 @@ function EnchantCheck:CalculateItemLevels(items, twoHanded)
 		local item = items[slot]
 		if item.link and item.level and item.level > 0 then
 			local shouldWarn = (item.level < avgItemLevel * EnchantCheckConstants.ITEM_LEVEL.LOW_THRESHOLD_MULTIPLIER) and
-				(slot ~= EnchantCheckConstants.SLOT_IDS.BODY) and (slot ~= EnchantCheckConstants.SLOT_IDS.TABARD)
-			
+				(slot ~= EnchantCheckConstants.SLOT_IDS.BODY) and (slot ~= EnchantCheckConstants.SLOT_IDS.TABARD) and
+				self:ShouldWarnAboutItem(unit, item)
+
 			-- Check heirloom setting
 			if self:GetSetting("ignoreHeirlooms") and item.rarity == EnchantCheckConstants.ITEM_LEVEL.HEIRLOOM_RARITY then
 				shouldWarn = false
@@ -907,17 +917,17 @@ function EnchantCheck:CheckGear(unit, printWarnings)
 		local twoHanded = items[EnchantCheckConstants.SLOT_IDS.MAINHAND].link ~= nil
 			and items[EnchantCheckConstants.SLOT_IDS.OFFHAND].link == nil
 
-		local avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems = self:CalculateItemLevels(items, twoHanded)
+		local avgItemLevel, itemLevelMin, itemLevelMax, lowLevelItems = self:CalculateItemLevels(items, twoHanded, unit)
 
 		local results = {
 			avgItemLevel = avgItemLevel,
 			itemLevelMin = itemLevelMin,
 			itemLevelMax = itemLevelMax,
 			lowLevelItems = lowLevelItems,
-			missingItems = self:CheckMissingItems(items, twoHanded),
-			missingEnchants = self:CheckMissingEnchants(items),
-			missingGems = self:CheckMissingGems(items),
-			upgradeableItems = self:CheckPurchaseableUpgrades(items),
+			missingItems = self:CheckMissingItems(items, twoHanded, unit),
+			missingEnchants = self:CheckMissingEnchants(items, unit),
+			missingGems = self:CheckMissingGems(items, unit),
+			upgradeableItems = self:CheckPurchaseableUpgrades(items, unit),
 			wrongArmorType = self:CheckWrongArmorType(unit, items),
 			wrongStats = self:CheckWrongStats(unit, items),
 		}

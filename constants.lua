@@ -181,6 +181,9 @@ EnchantCheckConstants.DEFAULTS = {
 
 		-- Sound Settings
 		enableSounds = false,
+		soundId = "None", -- LibSharedMedia "sound" key; "None" is a sentinel that
+		                   -- never resolves via LSM:Fetch, so nothing plays until
+		                   -- a real sound is picked.
 	},
 }
 
