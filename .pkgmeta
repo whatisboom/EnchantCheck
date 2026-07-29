@@ -8,7 +8,6 @@ ignore:
   - "*.sh"
   - .release
   - .github
-  - deprecated
   - README.md
   - CLAUDE.md
   - PUBLISHING.md
