@@ -22,9 +22,30 @@ local function Toggle(key, order, name, desc)
 	}
 end
 
+-- Builds one severity dropdown entry (off/warning/error) backed by
+-- GetSetting/SetSetting, validated the same way /ec set validates it
+-- against EnchantCheckConstants.ENUM_SETTINGS.
+local function Select(key, order, name, desc, values)
+	return {
+		order = order,
+		type = "select",
+		name = name,
+		desc = desc,
+		values = values,
+		get = function() return EnchantCheck:GetSetting(key) end,
+		set = function(_, val) EnchantCheck:SetSetting(key, val) end,
+	}
+end
+
 function Options:Setup()
 	local L = LibStub("AceLocale-3.0"):GetLocale("EnchantCheck")
 	local DEBUG_LEVELS = EnchantCheckConstants.DEBUG_LEVELS
+
+	local severityValues = {
+		["off"] = L["OPT_SEVERITY_OFF"],
+		["warning"] = L["OPT_SEVERITY_WARNING"],
+		["error"] = L["OPT_SEVERITY_ERROR"],
+	}
 
 	local options = {
 		type = "group",
@@ -39,15 +60,19 @@ function Options:Setup()
 
 			warningsHeader = { order = 30, type = "header", name = L["OPT_SECTION_WARNINGS"] },
 			warnMissingItems = Toggle("warnMissingItems", 31, L["OPT_WARN_MISSING_ITEMS"], L["OPT_WARN_MISSING_ITEMS_DESC"]),
-			warnMissingEnchants = Toggle("warnMissingEnchants", 32, L["OPT_WARN_MISSING_ENCHANTS"], L["OPT_WARN_MISSING_ENCHANTS_DESC"]),
-			warnMissingGems = Toggle("warnMissingGems", 33, L["OPT_WARN_MISSING_GEMS"], L["OPT_WARN_MISSING_GEMS_DESC"]),
-			warnLowItemLevel = Toggle("warnLowItemLevel", 34, L["OPT_WARN_LOW_ITEM_LEVEL"], L["OPT_WARN_LOW_ITEM_LEVEL_DESC"]),
-			warnPurchaseableUpgrades = Toggle("warnPurchaseableUpgrades", 35, L["OPT_WARN_PURCHASEABLE_UPGRADES"], L["OPT_WARN_PURCHASEABLE_UPGRADES_DESC"]),
-			warnWrongArmorType = Toggle("warnWrongArmorType", 36, L["OPT_WARN_WRONG_ARMOR_TYPE"], L["OPT_WARN_WRONG_ARMOR_TYPE_DESC"]),
-			warnWrongStats = Toggle("warnWrongStats", 37, L["OPT_WARN_WRONG_STATS"], L["OPT_WARN_WRONG_STATS_DESC"]),
+			primaryEnchantSeverity = Select("primaryEnchantSeverity", 32, L["OPT_PRIMARY_ENCHANT_SEVERITY"], L["OPT_PRIMARY_ENCHANT_SEVERITY_DESC"], severityValues),
+			primaryEnchantIconOnly = Toggle("primaryEnchantIconOnly", 33, L["OPT_PRIMARY_ENCHANT_ICON_ONLY"], L["OPT_PRIMARY_ENCHANT_ICON_ONLY_DESC"]),
+			secondaryEnchantSeverity = Select("secondaryEnchantSeverity", 34, L["OPT_SECONDARY_ENCHANT_SEVERITY"], L["OPT_SECONDARY_ENCHANT_SEVERITY_DESC"], severityValues),
+			secondaryEnchantIconOnly = Toggle("secondaryEnchantIconOnly", 35, L["OPT_SECONDARY_ENCHANT_ICON_ONLY"], L["OPT_SECONDARY_ENCHANT_ICON_ONLY_DESC"]),
+			warnMissingGems = Toggle("warnMissingGems", 36, L["OPT_WARN_MISSING_GEMS"], L["OPT_WARN_MISSING_GEMS_DESC"]),
+			warnLowItemLevel = Toggle("warnLowItemLevel", 37, L["OPT_WARN_LOW_ITEM_LEVEL"], L["OPT_WARN_LOW_ITEM_LEVEL_DESC"]),
+			socketUpgradeSeverity = Select("socketUpgradeSeverity", 38, L["OPT_SOCKET_UPGRADE_SEVERITY"], L["OPT_SOCKET_UPGRADE_SEVERITY_DESC"], severityValues),
+			socketUpgradeIconOnly = Toggle("socketUpgradeIconOnly", 39, L["OPT_SOCKET_UPGRADE_ICON_ONLY"], L["OPT_SOCKET_UPGRADE_ICON_ONLY_DESC"]),
+			warnWrongArmorType = Toggle("warnWrongArmorType", 40, L["OPT_WARN_WRONG_ARMOR_TYPE"], L["OPT_WARN_WRONG_ARMOR_TYPE_DESC"]),
+			warnWrongStats = Toggle("warnWrongStats", 41, L["OPT_WARN_WRONG_STATS"], L["OPT_WARN_WRONG_STATS_DESC"]),
 
-			soundsHeader = { order = 40, type = "header", name = L["OPT_SECTION_SOUNDS"] },
-			enableSounds = Toggle("enableSounds", 41, L["OPT_ENABLE_SOUNDS"], L["OPT_ENABLE_SOUNDS_DESC"]),
+			soundsHeader = { order = 50, type = "header", name = L["OPT_SECTION_SOUNDS"] },
+			enableSounds = Toggle("enableSounds", 51, L["OPT_ENABLE_SOUNDS"], L["OPT_ENABLE_SOUNDS_DESC"]),
 
 			advancedHeader = { order = 90, type = "header", name = L["OPT_SECTION_ADVANCED"] },
 			debugLevel = {

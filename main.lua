@@ -96,9 +96,20 @@ function EnchantCheck:SetConfigValue(setting, value)
 		self:Printf("Unknown setting: %s", setting)
 		return
 	end
-	
+
+	local allowedValues = EnchantCheckConstants.ENUM_SETTINGS[setting]
 	local newValue
-	if type(currentValue) == "boolean" then
+	if allowedValues then
+		newValue = value:lower()
+		local valid = false
+		for _, allowed in ipairs(allowedValues) do
+			if newValue == allowed then valid = true end
+		end
+		if not valid then
+			self:Printf("Invalid value for %s: %s. Valid values: %s", setting, value, table.concat(allowedValues, ", "))
+			return
+		end
+	elseif type(currentValue) == "boolean" then
 		newValue = (value:lower() == "true" or value == "1")
 	elseif type(currentValue) == "number" then
 		newValue = tonumber(value)
@@ -109,7 +120,7 @@ function EnchantCheck:SetConfigValue(setting, value)
 	else
 		newValue = value
 	end
-	
+
 	self:SetSetting(setting, newValue)
 	self:Printf("Set %s to %s", setting, tostring(newValue))
 end
@@ -304,6 +315,14 @@ function EnchantCheck:FormatMessage(message, severity)
 	return self:GetColorForSeverity(severity) .. message .. EnchantCheckConstants.UI.COLORS.RESET
 end
 
+-- Maps a tier's "warning"/"error" severity setting string to the numeric
+-- UI.SEVERITY enum used for chat/tooltip coloring.
+function EnchantCheck:SeverityStringToEnum(severity)
+	local SEV = EnchantCheckConstants.UI.SEVERITY
+	if severity == "error" then return SEV.ERROR end
+	return SEV.WARNING
+end
+
 
 function EnchantCheck:PlayNotificationSound()
 	if not self:GetSetting("enableSounds") then
@@ -359,6 +378,20 @@ function EnchantCheck:CheckMissingItems(items, twoHanded)
 	return missingItems, hasMissingItems
 end
 
+-- "primary" (weapon/chest/legs/rings, real stat-affecting enchants) vs.
+-- "secondary" (helm/shoulder/feet, tertiary-stat-only enchants) severity,
+-- per EnchantCheckConstants.ENCHANT_TIER. A tier's severity of "off" skips
+-- the slot entirely -- no chat line, no tooltip line, no overlay.
+function EnchantCheck:EnchantSeverityForSlot(slot)
+	local tier = EnchantCheckConstants.ENCHANT_TIER[slot]
+	if tier == "PRIMARY" then
+		return self:GetSetting("primaryEnchantSeverity")
+	elseif tier == "SECONDARY" then
+		return self:GetSetting("secondaryEnchantSeverity")
+	end
+	return "off"
+end
+
 function EnchantCheck:CheckMissingEnchants(items)
 	local missingEnchants = {}
 	local hasMissingEnchants = false
@@ -366,17 +399,18 @@ function EnchantCheck:CheckMissingEnchants(items)
 	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
 		local item = items[slot]
 		if item.link and (item.enchant == 0) then
-			if self:ShouldWarnAboutSlot(slot, item) then
+			local severity = self:EnchantSeverityForSlot(slot)
+			if severity ~= "off" and self:ShouldWarnAboutSlot(slot, item) then
 				local itemType = select(6, C_Item.GetItemInfo(item.link))
 
 				if not (item.rarity == EnchantCheckConstants.ITEM_LEVEL.ARTIFACT_RARITY or (slot == EnchantCheckConstants.SLOT_IDS.OFFHAND and itemType ~= WEAPON)) then
-					table.insert(missingEnchants, slot)
+					table.insert(missingEnchants, { slot = slot, severity = severity })
 					hasMissingEnchants = true
 				end
 			end
 		end
 	end
-	
+
 	return missingEnchants, hasMissingEnchants
 end
 
@@ -399,8 +433,8 @@ function EnchantCheck:CheckPurchaseableUpgrades(items)
 	local upgradeableItems = {}
 	local hasUpgradeableItems = false
 
-	-- Only check if setting is enabled
-	if not self:GetSetting("warnPurchaseableUpgrades") then
+	local severity = self:GetSetting("socketUpgradeSeverity")
+	if severity == "off" then
 		return upgradeableItems, hasUpgradeableItems
 	end
 
@@ -411,7 +445,7 @@ function EnchantCheck:CheckPurchaseableUpgrades(items)
 			local totalSockets = item.gems + item.sockets
 			if totalSockets < EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS then
 				local socketsNeeded = EnchantCheckConstants.SOCKET_UPGRADES.MAX_SOCKETS - totalSockets
-				table.insert(upgradeableItems, {slot = slot, count = socketsNeeded})
+				table.insert(upgradeableItems, {slot = slot, count = socketsNeeded, severity = severity})
 				hasUpgradeableItems = true
 			end
 		end
@@ -521,22 +555,26 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 	end
 
 	-- Purchaseable upgrades
-	if #results.upgradeableItems > 0 and self:GetSetting("warnPurchaseableUpgrades") then
+	if #results.upgradeableItems > 0 then
 		local parts = {}
 		for _, itemData in ipairs(results.upgradeableItems) do
 			table.insert(parts, L["INVSLOT_"..itemData.slot] .. " (" .. itemData.count .. ")")
 		end
-		table.insert(warnings, self:FormatMessage(L["UPGRADEABLE_SOCKETS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
+		local severity = self:SeverityStringToEnum(results.upgradeableItems[1].severity)
+		table.insert(warnings, self:FormatMessage(L["UPGRADEABLE_SOCKETS"] .. " " .. table.concat(parts, ", "), severity))
 		hasAnyIssues = true
 	end
 
 	-- Missing enchants
-	if #results.missingEnchants > 0 and self:GetSetting("warnMissingEnchants") then
+	if #results.missingEnchants > 0 then
 		local parts = {}
-		for _, slot in ipairs(results.missingEnchants) do
-			table.insert(parts, L["INVSLOT_"..slot])
+		local highestSeverity = EnchantCheckConstants.UI.SEVERITY.WARNING
+		for _, data in ipairs(results.missingEnchants) do
+			table.insert(parts, L["INVSLOT_"..data.slot])
+			local sev = self:SeverityStringToEnum(data.severity)
+			if sev > highestSeverity then highestSeverity = sev end
 		end
-		table.insert(warnings, self:FormatMessage(L["MISSING_ENCHANTS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
+		table.insert(warnings, self:FormatMessage(L["MISSING_ENCHANTS"] .. " " .. table.concat(parts, ", "), highestSeverity))
 		hasAnyIssues = true
 	end
 
@@ -701,14 +739,14 @@ function EnchantCheck:BuildSlotIssueLines(prefix, results)
 	if self:GetSetting("warnLowItemLevel") then
 		for _, d in ipairs(results.lowLevelItems) do add(d.slot, L["TOOLTIP_LOW_ILVL"], SEV.ERROR) end
 	end
-	if self:GetSetting("warnMissingEnchants") then
-		for _, slot in ipairs(results.missingEnchants) do add(slot, L["TOOLTIP_MISSING_ENCHANT"], SEV.ERROR) end
+	for _, d in ipairs(results.missingEnchants) do
+		add(d.slot, L["TOOLTIP_MISSING_ENCHANT"], self:SeverityStringToEnum(d.severity))
 	end
 	if self:GetSetting("warnMissingGems") then
 		for _, slot in ipairs(results.missingGems) do add(slot, L["TOOLTIP_MISSING_GEM"], SEV.ERROR) end
 	end
-	if self:GetSetting("warnPurchaseableUpgrades") then
-		for _, d in ipairs(results.upgradeableItems) do add(d.slot, L["TOOLTIP_PURCHASEABLE_UPGRADE"], SEV.WARNING) end
+	for _, d in ipairs(results.upgradeableItems) do
+		add(d.slot, L["TOOLTIP_PURCHASEABLE_UPGRADE"], self:SeverityStringToEnum(d.severity))
 	end
 	if self:GetSetting("warnWrongArmorType") then
 		for _, d in ipairs(results.wrongArmorType) do
@@ -729,44 +767,61 @@ function EnchantCheck:UpdateSlotOverlays(prefix, results)
 	if not self.slotOverlays or not self.slotOverlays[prefix] then return end
 
 	local cfg = EnchantCheckConstants.OVERLAY
+	local SEV = EnchantCheckConstants.UI.SEVERITY
 
-	-- Build per-slot issue map
-	local slotIssues = {} -- slotId -> {missingEnchant, missingGem, lowIlvl, purchaseableUpgrade, hasError}
+	-- Build per-slot issue map. Each slot tracks which icons are active and a
+	-- borderSeverity (nil/WARNING/ERROR) -- only issues whose display style is
+	-- "border" contribute to the border; icons show regardless of display style.
+	local slotIssues = {} -- slotId -> {missingEnchant, missingGem, lowIlvl, purchaseableUpgrade, borderSeverity}
 
-	-- Low item level (error severity)
+	local function raiseBorder(slot, severity)
+		local issue = slotIssues[slot]
+		if not issue.borderSeverity or severity > issue.borderSeverity then
+			issue.borderSeverity = severity
+		end
+	end
+
+	-- Low item level (error severity, always borders)
 	if #results.lowLevelItems > 0 and self:GetSetting("warnLowItemLevel") then
 		for _, itemData in ipairs(results.lowLevelItems) do
 			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
 			slotIssues[itemData.slot].lowIlvl = true
-			slotIssues[itemData.slot].hasError = true
+			raiseBorder(itemData.slot, SEV.ERROR)
 		end
 	end
 
 	-- Missing items don't get an overlay icon (the slot is already visibly empty)
 
-	-- Missing enchants (error severity)
-	if #results.missingEnchants > 0 and self:GetSetting("warnMissingEnchants") then
-		for _, slot in ipairs(results.missingEnchants) do
-			if not slotIssues[slot] then slotIssues[slot] = {} end
-			slotIssues[slot].missingEnchant = true
-			slotIssues[slot].hasError = true
+	-- Missing enchants: icon always shows; border is skipped when that slot's
+	-- tier is set to icon-only.
+	for _, data in ipairs(results.missingEnchants) do
+		if not slotIssues[data.slot] then slotIssues[data.slot] = {} end
+		slotIssues[data.slot].missingEnchant = true
+		local tier = EnchantCheckConstants.ENCHANT_TIER[data.slot]
+		local iconOnly = (tier == "PRIMARY") and self:GetSetting("primaryEnchantIconOnly") or self:GetSetting("secondaryEnchantIconOnly")
+		if not iconOnly then
+			raiseBorder(data.slot, self:SeverityStringToEnum(data.severity))
 		end
 	end
 
-	-- Missing gems (error severity)
+	-- Missing gems (error severity, always borders)
 	if #results.missingGems > 0 and self:GetSetting("warnMissingGems") then
 		for _, slot in ipairs(results.missingGems) do
 			if not slotIssues[slot] then slotIssues[slot] = {} end
 			slotIssues[slot].missingGem = true
-			slotIssues[slot].hasError = true
+			raiseBorder(slot, SEV.ERROR)
 		end
 	end
 
-	-- Purchaseable upgrades (warning severity)
-	if #results.upgradeableItems > 0 and self:GetSetting("warnPurchaseableUpgrades") then
+	-- Purchaseable upgrades: icon always shows; border is skipped when icon-only.
+	if #results.upgradeableItems > 0 then
+		local iconOnly = self:GetSetting("socketUpgradeIconOnly")
 		for _, itemData in ipairs(results.upgradeableItems) do
 			if not slotIssues[itemData.slot] then slotIssues[itemData.slot] = {} end
 			slotIssues[itemData.slot].purchaseableUpgrade = true
+			if not iconOnly then
+				raiseBorder(itemData.slot, self:SeverityStringToEnum(itemData.severity))
+			end
 		end
 	end
 
@@ -774,13 +829,13 @@ function EnchantCheck:UpdateSlotOverlays(prefix, results)
 	if #results.wrongArmorType > 0 and self:GetSetting("warnWrongArmorType") then
 		for _, data in ipairs(results.wrongArmorType) do
 			if not slotIssues[data.slot] then slotIssues[data.slot] = {} end
-			slotIssues[data.slot].hasError = true
+			raiseBorder(data.slot, SEV.ERROR)
 		end
 	end
 	if #results.wrongStats > 0 and self:GetSetting("warnWrongStats") then
 		for _, data in ipairs(results.wrongStats) do
 			if not slotIssues[data.slot] then slotIssues[data.slot] = {} end
-			slotIssues[data.slot].hasError = true
+			raiseBorder(data.slot, SEV.ERROR)
 		end
 	end
 
@@ -788,10 +843,18 @@ function EnchantCheck:UpdateSlotOverlays(prefix, results)
 	for slotId, overlay in pairs(self.slotOverlays[prefix]) do
 		local issues = slotIssues[slotId]
 		if issues then
-			-- Set border color based on severity
-			local borderColor = issues.hasError and cfg.BORDER_COLORS.ERROR or cfg.BORDER_COLORS.WARNING
-			for _, edge in ipairs(overlay.borderEdges) do
-				edge:SetColorTexture(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+			-- Border edges only show when at least one active issue on this
+			-- slot has display style "border"; icon-only issues leave no border.
+			if issues.borderSeverity then
+				local borderColor = (issues.borderSeverity >= SEV.ERROR) and cfg.BORDER_COLORS.ERROR or cfg.BORDER_COLORS.WARNING
+				for _, edge in ipairs(overlay.borderEdges) do
+					edge:SetColorTexture(borderColor.r, borderColor.g, borderColor.b, borderColor.a)
+					edge:Show()
+				end
+			else
+				for _, edge in ipairs(overlay.borderEdges) do
+					edge:Hide()
+				end
 			end
 
 			-- Each icon's position is fixed at creation; just toggle visibility.
