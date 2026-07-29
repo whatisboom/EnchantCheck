@@ -182,6 +182,10 @@ function EnchantCheck:OnInitialize()
 		self:Enable();
 	end
 
+	if self.Options and self.Options.Setup then
+		self.Options:Setup()
+	end
+
 	log:Notice(L["LOADED"]);
 end
 

@@ -12,3 +12,4 @@ constants.lua
 Locales\locales.xml
 main.lua
 speccheck.lua
+Options.lua
