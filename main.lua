@@ -56,10 +56,10 @@ function EnchantCheck:ChatCommand(msg)
 		table.insert(args, word)
 	end
 	
-	if #args == 0 or args[1] == "help" then
+	if #args == 0 or args[1] == "config" or args[1] == "settings" then
+		self:OpenOptions()
+	elseif args[1] == "help" then
 		self:ShowHelp()
-	elseif args[1] == "config" or args[1] == "settings" then
-		self:ShowConfig()
 	elseif args[1] == "set" and args[2] and args[3] then
 		self:SetConfigValue(args[2], args[3])
 	elseif args[1] == "toggle" and args[2] then
@@ -73,36 +73,21 @@ function EnchantCheck:ChatCommand(msg)
 	end
 end
 
+function EnchantCheck:OpenOptions()
+	if self.Options and self.Options.Open then
+		self.Options:Open()
+	end
+end
+
 function EnchantCheck:ShowHelp()
 	self:Printf("|cff00FF00EnchantCheck Commands:|cffFFFFFF")
 	self:Printf("  |cffFFFF00/enchantcheck help|cffFFFFFF - Show this help")
 	self:Printf("  |cffFFFF00/enchantcheck check|cffFFFFFF - Check your gear")
-	self:Printf("  |cffFFFF00/enchantcheck config|cffFFFFFF - Show current settings")
+	self:Printf("  |cffFFFF00/enchantcheck config|cffFFFFFF - Open the settings panel")
 	self:Printf("  |cffFFFF00/enchantcheck set <setting> <value>|cffFFFFFF - Change a setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck toggle <setting>|cffFFFFFF - Toggle a boolean setting (use camelCase)")
 	self:Printf("  |cffFFFF00/enchantcheck reset|cffFFFFFF - Reset all settings to defaults")
 	self:Printf("  |cff888888Examples: smartNotifications, ignoreHeirlooms|cffFFFFFF")
-end
-
-----------------------------------------------
--- Debug Function
-----------------------------------------------
-
-function EnchantCheck:ShowConfig()
-	self:Printf("|cff00FF00Current EnchantCheck Settings:|cffFFFFFF")
-	
-	-- Check if db is available
-	if not self.db or not self.db.profile then
-		self:Printf("|cffFF0000ERROR: Settings database not initialized!|cffFFFFFF")
-		return
-	end
-	
-	-- Show all settings with nil handling
-	self:Printf("  Smart Notifications: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("smartNotifications") or "nil"))
-	self:Printf("  Ignore Heirlooms: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("ignoreHeirlooms") or "nil"))
-	self:Printf("  Enable Sounds: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("enableSounds") or "nil"))
-	self:Printf("  Warn Wrong Armor Type: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("warnWrongArmorType")))
-	self:Printf("  Warn Wrong Stats: |cffFFFF00%s|cffFFFFFF", tostring(self:GetSetting("warnWrongStats")))
 end
 
 function EnchantCheck:SetConfigValue(setting, value)
@@ -236,6 +221,8 @@ function EnchantCheck:OnConfigUpdate()
 			EnchantCheck:Disable()
 		end
 	end
+
+	LibStub("AceConfigRegistry-3.0"):NotifyChange("EnchantCheck")
 end
 
 ----------------------------------------------
