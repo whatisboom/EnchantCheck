@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.0.7-4]
+
+### Fixed
+- False "Average item level: 0" / all-slots-missing report when zoning into an instance right after a loading screen, before the client's inventory cache repopulated.
+- Notification sound no longer plays for warning-only reports (e.g. missing gems, warning-tier missing enchants); it now only fires when the highest issue found is error severity.
+
 ## [12.0.7-3-beta]
 
 ### Added
@@ -40,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full slash-command config system: `/ec config`, `/ec set <setting> <value>`, `/ec toggle <setting>`, `/ec reset`.
 - Localized into English, German, Russian, Simplified Chinese, and Traditional Chinese.
 
-[Unreleased]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-3-beta...HEAD
+[Unreleased]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-4...HEAD
+[12.0.7-4]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-3-beta...v12.0.7-4
 [12.0.7-3-beta]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-2...v12.0.7-3-beta
 [12.0.7-2]: https://github.com/whatisboom/EnchantCheck/releases/tag/v12.0.7-2

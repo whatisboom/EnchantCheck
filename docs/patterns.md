@@ -4,7 +4,9 @@ Non-obvious patterns worth keeping in head. Anything that's already obvious from
 
 ## Item data readiness
 
-`C_Item.GetItemInfo(link)` returns `nil` when the server hasn't delivered full item data yet (first-open race). The addon's rescan loop handles this: it requests data via `C_Item.RequestLoadItemDataByID` and retries up to `rescanCount` times within a single frame. If you add a code path that reads item data, either go through `CheckGear`'s readiness gate or tolerate nil returns.
+`C_Item.GetItemInfo(link)` returns `nil` when the server hasn't delivered full item data yet (first-open race). `CheckGear` handles this per-slot: if a slot has a link but no cached item info, it defers via `Item:CreateFromEquipmentSlot(slot, unit):ContinueOnItemLoad(...)` and re-reads the link once the data streams in. A generation token (`self._scanGens[framePrefix]`) invalidates stale callbacks from a superseded scan. If you add a code path that reads item data, either go through `CheckGear`'s readiness gate or tolerate nil returns.
+
+This only covers item *metadata* readiness for a link the client already has — it doesn't cover the equipped-item *link itself* being transiently `nil`. Right after a loading screen, `GetInventoryItemID`/`GetInventoryItemLink` can report every slot empty for a moment before the client's inventory cache repopulates, even though `PLAYER_ENTERING_WORLD` has already fired. `CheckGearOnEnteringWorld` guards the auto-check-on-zone-in path against this by treating an all-slots-empty read as "not ready" and retrying briefly before calling `CheckGear`.
 
 ## Item string format
 

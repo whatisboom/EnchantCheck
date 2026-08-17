@@ -522,7 +522,12 @@ end
 
 function EnchantCheck:BuildChatWarnings(unit, results)
 	local warnings = {}
-	local hasAnyIssues = false
+	local highestIssueSeverity = nil
+	local function raiseSeverity(sev)
+		if not highestIssueSeverity or sev > highestIssueSeverity then
+			highestIssueSeverity = sev
+		end
+	end
 
 	-- Header
 	local displayClass, class = UnitClass(unit)
@@ -540,7 +545,7 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 	if #results.lowLevelItems > 0 and self:GetSetting("warnLowItemLevel") then
 		for _, itemData in ipairs(results.lowLevelItems) do
 			table.insert(warnings, self:FormatMessage(L["LOW_ITEM_LEVEL"] .. " " .. itemData.link, EnchantCheckConstants.UI.SEVERITY.ERROR))
-			hasAnyIssues = true
+			raiseSeverity(EnchantCheckConstants.UI.SEVERITY.ERROR)
 		end
 	end
 
@@ -551,7 +556,7 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_ITEMS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.ERROR))
-		hasAnyIssues = true
+		raiseSeverity(EnchantCheckConstants.UI.SEVERITY.ERROR)
 	end
 
 	-- Missing gems
@@ -561,7 +566,7 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 			table.insert(parts, L["INVSLOT_"..slot])
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_GEMS"] .. " " .. table.concat(parts, ", "), EnchantCheckConstants.UI.SEVERITY.WARNING))
-		hasAnyIssues = true
+		raiseSeverity(EnchantCheckConstants.UI.SEVERITY.WARNING)
 	end
 
 	-- Purchaseable upgrades
@@ -572,7 +577,7 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 		end
 		local severity = self:SeverityStringToEnum(results.upgradeableItems[1].severity)
 		table.insert(warnings, self:FormatMessage(L["UPGRADEABLE_SOCKETS"] .. " " .. table.concat(parts, ", "), severity))
-		hasAnyIssues = true
+		raiseSeverity(severity)
 	end
 
 	-- Missing enchants
@@ -585,7 +590,7 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 			if sev > highestSeverity then highestSeverity = sev end
 		end
 		table.insert(warnings, self:FormatMessage(L["MISSING_ENCHANTS"] .. " " .. table.concat(parts, ", "), highestSeverity))
-		hasAnyIssues = true
+		raiseSeverity(highestSeverity)
 	end
 
 	-- Wrong armor type
@@ -593,7 +598,7 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 		for _, data in ipairs(results.wrongArmorType) do
 			local msg = L["WRONG_ARMOR_TYPE"] .. " " .. L["INVSLOT_"..data.slot] .. " — " .. data.reason
 			table.insert(warnings, self:FormatMessage(msg, EnchantCheckConstants.UI.SEVERITY.ERROR))
-			hasAnyIssues = true
+			raiseSeverity(EnchantCheckConstants.UI.SEVERITY.ERROR)
 		end
 	end
 
@@ -602,13 +607,13 @@ function EnchantCheck:BuildChatWarnings(unit, results)
 		for _, data in ipairs(results.wrongStats) do
 			local msg = L["WRONG_STATS"] .. " " .. L["INVSLOT_"..data.slot] .. " — " .. data.reason
 			table.insert(warnings, self:FormatMessage(msg, EnchantCheckConstants.UI.SEVERITY.ERROR))
-			hasAnyIssues = true
+			raiseSeverity(EnchantCheckConstants.UI.SEVERITY.ERROR)
 		end
 	end
 
-	if not hasAnyIssues then
+	if not highestIssueSeverity then
 		table.insert(warnings, self:FormatMessage(L["PROPER_ENCHANTS"], EnchantCheckConstants.UI.SEVERITY.GOOD))
-	else
+	elseif highestIssueSeverity >= EnchantCheckConstants.UI.SEVERITY.ERROR then
 		self:PlayNotificationSound()
 	end
 
@@ -1081,8 +1086,34 @@ end
 function EnchantCheck:PLAYER_ENTERING_WORLD(event)
 	local inInstance, instanceType = IsInInstance()
 	if inInstance and (instanceType ~= "none") and (UnitLevel("player") == GetMaxLevelForPlayerExpansion()) then
-		self:CheckGear("player", true)
+		self:CheckGearOnEnteringWorld()
 	end
+end
+
+-- GetInventoryItemID/Link can transiently report every slot empty for a
+-- moment right after a loading screen, before the client's inventory cache
+-- repopulates. A real character can't have zero equipped items while
+-- standing in an instance, so treat that state as "not ready yet" and
+-- retry briefly instead of printing a false "everything missing" report.
+function EnchantCheck:CheckGearOnEnteringWorld(attempt)
+	attempt = attempt or 1
+
+	local hasAnyItem = false
+	for slot = 1, EnchantCheckConstants.EQUIPMENT_SLOTS.TOTAL do
+		if GetInventoryItemID("player", slot) then
+			hasAnyItem = true
+			break
+		end
+	end
+
+	if not hasAnyItem and attempt < 5 then
+		self:ScheduleTimer(function()
+			self:CheckGearOnEnteringWorld(attempt + 1)
+		end, 0.5)
+		return
+	end
+
+	self:CheckGear("player", true)
 end
 
 ----------------------------------------------
