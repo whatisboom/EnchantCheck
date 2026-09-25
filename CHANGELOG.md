@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.1.0-2]
+
+### Fixed
+- BoomForge is now declared as a required dependency on each CurseForge upload, so the CurseForge app installs it automatically alongside EnchantCheck.
+
 ## [12.1.0-1]
 
 ### Changed
