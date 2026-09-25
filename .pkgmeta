@@ -1,5 +1,11 @@
 package-as: EnchantCheck
 
+# Mark BoomForge as a required dependency on the CurseForge upload (by project
+# slug). `## RequiredDeps` in the .toc only affects the game client; without this,
+# CurseForge and its app don't know to install BoomForge alongside EnchantCheck.
+required-dependencies:
+  - boomforge
+
 manual-changelog: CHANGELOG.md
 
 license-output: LICENSE
