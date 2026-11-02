@@ -242,7 +242,7 @@ end
 ----------------------------------------------
 -- For the player's own equipped gear, C_Item.GetCurrentItemLevel(ItemLocation)
 -- returns the same value as the character pane / tooltip — it reflects any
--- scaling cap applied to the equipped instance. GetDetailedItemLevelInfo on the
+-- scaling cap applied to the equipped instance. C_Item.GetDetailedItemLevelInfo on the
 -- link can be wildly off for items with scaling bonus_ids (e.g. Legion Remix
 -- gear reporting 655 when the worn item is actually 102), so we only fall back
 -- to it for the inspect case where no ItemLocation is available.
@@ -261,7 +261,7 @@ function EnchantCheck:GetActualItemLevel(unit, slot, link)
 		end
 	end
 
-	local effective = GetDetailedItemLevelInfo(link)
+	local effective = C_Item.GetDetailedItemLevelInfo(link)
 	if effective and effective > 0 then
 		return effective
 	end
