@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.1.5-1]
+
+### Changed
+- Bumped Interface version to 120105 for patch 12.1.5.
+
+### Fixed
+- Lua error ("attempt to call a nil value" in `GetActualItemLevel`) when checking inspected or party members' gear, caused by the 12.1 client removing the global `GetDetailedItemLevelInfo`.
+
 ## [12.1.0-2]
 
 ### Fixed
@@ -54,7 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full slash-command config system: `/ec config`, `/ec set <setting> <value>`, `/ec toggle <setting>`, `/ec reset`.
 - Localized into English, German, Russian, Simplified Chinese, and Traditional Chinese.
 
-[Unreleased]: https://github.com/whatisboom/EnchantCheck/compare/v12.1.0-1...HEAD
+[Unreleased]: https://github.com/whatisboom/EnchantCheck/compare/v12.1.5-1...HEAD
+[12.1.5-1]: https://github.com/whatisboom/EnchantCheck/compare/v12.1.0-2...v12.1.5-1
+[12.1.0-2]: https://github.com/whatisboom/EnchantCheck/compare/v12.1.0-1...v12.1.0-2
 [12.1.0-1]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-3-beta...v12.1.0-1
 [12.0.7-3-beta]: https://github.com/whatisboom/EnchantCheck/compare/v12.0.7-2...v12.0.7-3-beta
 [12.0.7-2]: https://github.com/whatisboom/EnchantCheck/releases/tag/v12.0.7-2
